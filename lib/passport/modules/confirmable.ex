@@ -17,6 +17,15 @@ defmodule Passport.Confirmable do
     end
   end
 
+  def migration_fields(_mod) do
+    [
+      "# Confirmable",
+      "add :confirmation_token, :string",
+      "add :confirmed_at, :utc_datetime",
+      "add :confirmation_sent_at, :utc_datetime",
+    ]
+  end
+
   alias Passport.Keygen
 
   def generate_confirmation_token do

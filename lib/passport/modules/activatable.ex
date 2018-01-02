@@ -1,14 +1,28 @@
 defmodule Passport.Activatable do
   @moduledoc """
-  Affects whether an
+  Affects a Record's 'active' state
   """
   import Ecto.Changeset
 
   defmacro schema_fields do
     quote do
-      field :active, :boolean, default: true
-      field :activated_at, :utc_datetime
+      if Passport.Config.activatable_is_flag(__MODULE__) do
+        field :active, :boolean, default: true
+      else
+        field :activated_at, :utc_datetime
+      end
     end
+  end
+
+  def migration_fields(mod) do
+    [
+      "# Activatable",
+      if Passport.Config.activatable_is_flag(__MODULE__) do
+        "add :active, :boolean, default: true"
+      else
+        "add :activated_at, :utc_datetime"
+      end,
+    ]
   end
 
   @doc """

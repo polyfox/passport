@@ -17,7 +17,9 @@ defmodule Passport.Config do
   end
 
   [
-    {:password_hash_field, :password_hash}
+    {:password_hash_field, :password_hash},
+    # Whether Activatable is a single flag :active or a timestamp :activated_at
+    {:activatable_is_flag, true},
   ]
   |> Enum.each(fn {name, default} ->
     def unquote(name)(namespace \\ nil) do

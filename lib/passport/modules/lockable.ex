@@ -10,6 +10,14 @@ defmodule Passport.Lockable do
     end
   end
 
+  def migration_fields(_mod) do
+    [
+      "# Lockable",
+      "add :failed_attempts, :integer, default: 0",
+      "add :locked_at, :utc_datetime",
+    ]
+  end
+
   defp perform_lock(changeset) do
     case get_field(changeset, :failed_attempts) do
       # we check if the failed_attempts as if (v + 1) here

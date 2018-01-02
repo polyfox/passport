@@ -1,10 +1,11 @@
+alias Passport.Config
+require Config
+
 defmodule Passport.Authenticatable do
   import Comeonin.Bcrypt,
     only: [checkpw: 2, dummy_checkpw: 0, hashpwsalt: 1]
 
   import Ecto.Changeset
-  alias Passport.Config
-  require Config
 
   defmacro schema_fields do
     quote do
@@ -13,6 +14,13 @@ defmodule Passport.Authenticatable do
       field :password_confirmation, :string, virtual: true
       field :password_changed, :boolean, virtual: true
     end
+  end
+
+  def migration_fields(mod) do
+    [
+      "# Authenticatable",
+      "add :#{Config.password_hash_field(mod)}, :string, null: false",
+    ]
   end
 
   defp hash_password!(changeset) do

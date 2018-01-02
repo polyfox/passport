@@ -1,14 +1,26 @@
 defmodule Passport.Trackable do
   import Ecto.Changeset
 
-  defmacro schema_fields do
+  defmacro schema_fields(opts) do
+    timestamp_type = Keyword.get(:timestamp_type, :utc_datetime)
     quote do
       field :sign_in_count, :integer, default: 0
-      field :current_sign_in_at, :utc_datetime
+      field :current_sign_in_at, unquote(timestamp_type)
       field :current_sign_in_ip, :string
-      field :last_sign_in_at, :utc_datetime
+      field :last_sign_in_at, unquote(timestamp_type)
       field :last_sign_in_ip, :string
     end
+  end
+
+  def migration_fields(_mod) do
+    [
+      "# Trackable",
+      "add :sign_in_count, :integer, default: 0",
+      "add :current_sign_in_at, :utc_datetime",
+      "add :current_sign_in_ip, :string",
+      "add :last_sign_in_at, :utc_datetime",
+      "add :last_sign_in_ip, :string",
+    ]
   end
 
   defp format_remote_ip({a, b, c, d}) do

@@ -10,6 +10,15 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
+  def migration_fields(_mod) do
+    [
+      "# TwoFactorAuth",
+      "add :tfa_otp_secret_key, :string",
+      "add :tfa_enabled, :boolean",
+      "add :tfa_attempts_count, :integer, default: 0",
+    ]
+  end
+
   alias Passport.Keygen
 
   def generate_secret_key do

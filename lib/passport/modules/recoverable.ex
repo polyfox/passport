@@ -1,6 +1,7 @@
 defmodule Passport.Recoverable do
   import Ecto.Changeset
   import Ecto.Query
+  alias Passport.Keygen
 
   # for now
   @type t :: term
@@ -25,7 +26,13 @@ defmodule Passport.Recoverable do
     end
   end
 
-  alias Passport.Keygen
+  def migration_fields(_mod) do
+    [
+      "# Recoverable",
+      "add :reset_password_token, :string",
+      "add :reset_password_sent_at, :utc_datetime",
+    ]
+  end
 
   def generate_reset_password_token do
     Keygen.random_string(128)
