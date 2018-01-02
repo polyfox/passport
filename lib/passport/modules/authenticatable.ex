@@ -3,10 +3,12 @@ defmodule Passport.Authenticatable do
     only: [checkpw: 2, dummy_checkpw: 0, hashpwsalt: 1]
 
   import Ecto.Changeset
+  alias Passport.Config
+  require Config
 
   defmacro schema_fields do
     quote do
-      field :password_hash, :string
+      field unquote(Config.password_hash_field()), :string
       field :password, :string, virtual: true
       field :password_confirmation, :string, virtual: true
       field :password_changed, :boolean, virtual: true
@@ -24,7 +26,7 @@ defmodule Passport.Authenticatable do
     if password do
       changeset
       |> put_change(:password_changed, true)
-      |> put_change(:password_hash, hashpwsalt(password))
+      |> put_change(Config.password_hash_field(), hashpwsalt(password))
     else
       changeset
     end
@@ -44,7 +46,7 @@ defmodule Passport.Authenticatable do
     changeset
     |> cast(params, [:password, :password_confirmation])
     |> hash_password()
-    |> validate_required([:password_hash])
+    |> validate_required([Config.password_hash_field()])
   end
 
   @doc """
@@ -60,7 +62,7 @@ defmodule Passport.Authenticatable do
     changeset
     |> cast(params, [:password, :password_confirmation])
     |> hash_password!()
-    |> validate_required([:password_hash])
+    |> validate_required([Config.password_hash_field()])
   end
 
   def check_password(_user, nil) do
@@ -74,7 +76,7 @@ defmodule Passport.Authenticatable do
   end
 
   def check_password(record, password) do
-    if checkpw(password, record.password_hash) do
+    if checkpw(password, Map.get(record, Config.password_hash_field())) do
       {:ok, record}
     else
       {:error, {:unauthorized, record}}
