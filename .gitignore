@@ -1,0 +1,4 @@
+/deps
+/_build
+/tmp
+*.erldump
