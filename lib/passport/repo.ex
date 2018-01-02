@@ -6,11 +6,11 @@ defmodule Passport.Repo do
   @primary_repo Application.get_env(:passport, :primary_repo)
   @replica_repo Application.get_env(:passport, :replica_repo)
 
-  def update(changeset_or_struct, opts \\ []) do
-    @primary_repo.update(changeset_or_struct, opts)
+  defmacro primary do
+    @primary_repo
   end
 
-  def one(changeset_or_struct, opts \\ []) do
-    @replica_repo.one(changeset_or_struct, opts)
+  defmacro replica do
+    @replica_repo
   end
 end

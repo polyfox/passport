@@ -1,3 +1,5 @@
+require Passport
+
 defmodule Passport.Support.Web.Router do
   use Passport.Support.Web, :router
 
@@ -14,13 +16,9 @@ defmodule Passport.Support.Web.Router do
   end
 
   scope "/", Passport.Support.Web do
-    pipe_through :browser # Use the default browser stack
-
-    get "/", PageController, :index
+    pipe_through :api
+    scope "/account" do
+      Passport.routes([:confirmable, :recoverable])
+    end
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", Passport.Support.Web do
-  #   pipe_through :api
-  # end
 end

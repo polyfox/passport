@@ -20,6 +20,8 @@ defmodule Passport.Support.Web.ConnCase do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
       import Passport.Support.Web.Router.Helpers
+      import Passport.Support.Factory
+      require Passport.Repo
 
       # The default endpoint for testing
       @endpoint Passport.Support.Web.Endpoint

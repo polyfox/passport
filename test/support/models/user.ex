@@ -5,6 +5,8 @@ defmodule Passport.Support.User do
   import Ecto.Changeset
 
   schema "users" do
+    timestamps(type: :utc_datetime)
+
     field :email, :string
     field :username, :string
 

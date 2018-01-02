@@ -1,3 +1,5 @@
+require Passport.Repo
+
 defmodule Passport do
   alias Passport.{
     Activatable,
@@ -53,20 +55,20 @@ defmodule Passport do
     end
   end
 
-  @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | User.t
+  @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | term
   def find_by_confirmation_token(query, nil), do: nil
   def find_by_confirmation_token(query, token) do
     query
     |> Confirmable.by_confirmation_token(token)
-    |> Repo.one()
+    |> Repo.replica().one()
   end
 
-  @spec find_by_reset_password_token(query :: term, token :: String.t) :: nil | User.t
+  @spec find_by_reset_password_token(query :: term, token :: String.t) :: nil | term
   def find_by_reset_password_token(query, nil), do: nil
   def find_by_reset_password_token(query, token) do
     query
     |> Recoverable.by_reset_password_token(token)
-    |> Repo.one()
+    |> Repo.replica().one()
   end
 
   @spec track_failed_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
@@ -77,7 +79,7 @@ defmodule Passport do
     # because track_failed_attempts uses a prepare_changes, ecto believes the
     # record has not changed and will not execute the update
     # force: true, here ensures that the prepare_changes is ran
-    |> Repo.update(force: true)
+    |> Repo.primary().update(force: true)
   end
 
   @spec track_tfa_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
@@ -88,7 +90,7 @@ defmodule Passport do
     # because track_failed_attempts uses a prepare_changes, ecto believes the
     # record has not changed and will not execute the update,
     # force: true, here ensures that the prepare_changes is ran
-    |> Repo.update(force: true)
+    |> Repo.primary().update(force: true)
   end
 
   @spec confirm_email(Ecto.Changeset.t | term) :: {:ok, term} | {:error, term}
@@ -96,7 +98,7 @@ defmodule Passport do
     record
     |> change()
     |> Confirmable.confirm()
-    |> Repo.update()
+    |> Repo.primary().update()
   end
 
   @doc """
@@ -130,17 +132,17 @@ defmodule Passport do
     record
     |> change()
     |> Recoverable.prepare_reset_password()
-    |> Repo.update()
+    |> Repo.primary().update()
   end
 
   @doc """
   Resets a user's password and clears any reset information
   """
-  @spec reset_password(User.t, params) :: {:ok, User.t} | {:error, term}
+  @spec reset_password(term, params) :: {:ok, term} | {:error, term}
   def reset_password(record, params) do
     record
     |> changeset(params, :password)
-    |> Repo.update()
+    |> Repo.primary().update()
   end
 
   @doc """
@@ -154,10 +156,10 @@ defmodule Passport do
     record
     |> change()
     |> Recoverable.clear_reset_password()
-    |> Repo.update()
+    |> Repo.primary().update()
   end
 
-  @spec on_successful_sign_in(User.t, remote_ip :: term) :: {:ok, User.t} | {:error, term}
+  @spec on_successful_sign_in(term, remote_ip :: term) :: {:ok, term} | {:error, term}
   def on_successful_sign_in(record, remote_ip) do
     record
     |> change()
@@ -167,16 +169,16 @@ defmodule Passport do
     |> Lockable.clear_failed_attempts()
     # clear tfa attempts
     |> TwoFactorAuth.clear_tfa_attempts()
-    |> Repo.update()
+    |> Repo.primary().update()
   end
 
+  @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}
   def check_authenticatable(record, password) do
     case Authenticatable.check_password(record, password) do
       {:ok, record} ->
         cond do
           !record.active -> {:error, :inactive}
           !record.confirmed_at -> {:error, :unconfirmed}
-          !record.approved -> {:error, :unapproved}
           record.locked_at -> {:error, :locked}
           true -> {:ok, record}
         end

@@ -55,6 +55,8 @@ defmodule Passport.Mixfile do
       {:pot, "~> 0.9"},
       {:ecto, "~> 2.2"},
       {:poison, "~> 2.0 or ~> 3.0"},
+      #
+      {:ex_machina, "~> 2.0", git: "https://github.com/thoughtbot/ex_machina", only: :test},
     ]
   end
 end

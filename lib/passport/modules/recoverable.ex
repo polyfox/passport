@@ -16,7 +16,9 @@ defmodule Passport.Recoverable do
     quote do
       # Request a password reset
       post "/password", PasswordController, :create
-      # Reset password
+      # Reset password - pick your poison (by verb)
+      post "/password/:token", PasswordController, :update
+      patch "/password/:token", PasswordController, :update
       put "/password/:token", PasswordController, :update
       # Clear reset password
       delete "/password/:token", PasswordController, :delete
