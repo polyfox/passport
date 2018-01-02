@@ -110,6 +110,19 @@ defmodule Passport do
     |> Recoverable.clear_reset_password()
   end
 
+  @doc """
+  Changeset used for updates
+
+  Args:
+  * `record` - the user to update
+  * `params` - the parameters
+  """
+  def changeset(record, params) do
+    record
+    |> TwoFactorAuth.changeset(params)
+    |> Authenticatable.changeset(params)
+  end
+
   @spec prepare_reset_password(Ecto.Changeset.t | Recoverable.t) :: {:ok, term} | {:error, term}
   def prepare_reset_password(record) do
     record
@@ -153,5 +166,20 @@ defmodule Passport do
     # clear tfa attempts
     |> TwoFactorAuth.clear_tfa_attempts()
     |> Repo.update()
+  end
+
+  def check_authenticatable(record, password) do
+    case Authenticatable.check_password(record, password) do
+      {:ok, record} ->
+        cond do
+          !record.active -> {:error, :inactive}
+          !record.confirmed_at -> {:error, :unconfirmed}
+          !record.approved -> {:error, :unapproved}
+          record.locked_at -> {:error, :locked}
+          true -> {:ok, record}
+        end
+
+      {:error, _} = err -> err
+    end
   end
 end

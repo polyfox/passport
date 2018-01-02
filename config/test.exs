@@ -1,5 +1,14 @@
 use Mix.Config
 
+# Configures the endpoint
+config :passport, Passport.Support.Web.Endpoint,
+  url: [host: "localhost", port: 4001],
+  secret_key_base: "nVOH69Esw7w6+UinScaJ+LIsUzs4j+lfgM3Ogpp5/8UEN8//N9ekht6UuXzjAhOZ",
+  render_errors: [view: Passport.Support.Web.ErrorView, accepts: ~w(html json)],
+  pubsub: [name: Passport.Support.PubSub,
+           adapter: Phoenix.PubSub.PG2],
+  server: false
+
 config :passport, ecto_repos: [Passport.Support.Repo]
 config :passport, Passport.Support.Repo,
   adapter: Ecto.Adapters.Postgres,

@@ -1,9 +1,14 @@
 defmodule Passport.PasswordController do
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
     quote location: :keep do
       alias Passport
 
       @behaviour Passport.PasswordController
+
+      if Keyword.has_key?(unquote(opts), :recoverable_model) do
+        @impl true
+        def recoverable_model, do: unquote(opts[:recoverable_model])
+      end
 
       @doc """
       POST /password
@@ -16,8 +21,13 @@ defmodule Passport.PasswordController do
       def create(conn, params) do
         case request_reset_password(params) do
           {:error, {:parameter_missing, field}} ->
-            send_parameter_error(conn, field, :missing)
-          _ -> send_no_content(conn)
+            conn
+            |> put_status(422)
+            |> render("parameter_missing.json", fields: [field])
+          _ ->
+            conn
+            |> put_status(204)
+            |> render("no_content.json")
         end
       end
 
@@ -30,14 +40,22 @@ defmodule Passport.PasswordController do
       * `token` - the reset password token
       """
       def update(conn, params) do
-        case Passport.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
-          nil -> send_not_found(conn)
+        token = conn.path_params["token"]
+        case Passport.find_by_reset_password_token(recoverable_model(), token) do
+          nil ->
+            conn
+            |> put_status(404)
+            |> render("not_found.json", resource: "password_reset", id: token)
           authenticatable ->
             case Passport.reset_password(authenticatable, params) do
               {:ok, _authenticatable} ->
-                send_no_content(conn)
+                conn
+                |> put_status(204)
+                |> render("no_content.json")
               {:error, %Ecto.Changeset{} = changeset} ->
-                send_changeset_error(conn, changeset)
+                conn
+                |> put_status(422)
+                |> render("error.json", changeset: changeset)
             end
         end
       end
@@ -51,15 +69,23 @@ defmodule Passport.PasswordController do
       * `token` - the reset password token
       """
       def delete(conn, _params) do
-        case Passport.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
-          nil -> send_not_found(conn)
+        token = conn.path_params["token"]
+        case Passport.find_by_reset_password_token(recoverable_model(), token) do
+          nil ->
+            conn
+            |> put_status(404)
+            |> render("not_found.json", resource: "password_reset", id: token)
           authenticatable ->
             case Passport.clear_reset_password(authenticatable) do
               {:ok, _authenticatable} ->
-                send_no_content(conn)
+                conn
+                |> put_status(204)
+                |> render("no_content.json")
               {:error, %Ecto.Changeset{} = changeset} ->
                 # should never happen, but, things happen
-                send_changeset_error(conn, changeset)
+                conn
+                |> put_status(422)
+                |> render("error.json", changeset: changeset)
             end
         end
       end

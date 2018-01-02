@@ -1,3 +1,5 @@
+require Passport
+
 defmodule Passport.Support.User do
   use Ecto.Schema
   import Ecto.Changeset
@@ -12,7 +14,9 @@ defmodule Passport.Support.User do
   def changeset(record, params) do
     record
     |> cast(params, [
-      :email
+      :email,
+      :username
     ])
+    |> Passport.changeset(params)
   end
 end
