@@ -1,8 +1,8 @@
 defmodule Passport.Trackable do
   import Ecto.Changeset
 
-  defmacro schema_fields(opts) do
-    timestamp_type = Keyword.get(:timestamp_type, :utc_datetime)
+  defmacro schema_fields(opts \\ []) do
+    timestamp_type = Keyword.get(opts, :timestamp_type, :utc_datetime)
     quote do
       field :sign_in_count, :integer, default: 0
       field :current_sign_in_at, unquote(timestamp_type)
