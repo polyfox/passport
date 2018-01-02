@@ -8,7 +8,7 @@ defmodule Passport.Authenticatable do
 
   defmacro schema_fields do
     quote do
-      field unquote(Config.password_hash_field()), :string
+      field Config.password_hash_field(__MODULE__), :string
       field :password, :string, virtual: true
       field :password_confirmation, :string, virtual: true
       field :password_changed, :boolean, virtual: true
@@ -26,7 +26,7 @@ defmodule Passport.Authenticatable do
     if password do
       changeset
       |> put_change(:password_changed, true)
-      |> put_change(Config.password_hash_field(), hashpwsalt(password))
+      |> put_change(Config.password_hash_field(changeset), hashpwsalt(password))
     else
       changeset
     end
@@ -46,7 +46,7 @@ defmodule Passport.Authenticatable do
     changeset
     |> cast(params, [:password, :password_confirmation])
     |> hash_password()
-    |> validate_required([Config.password_hash_field()])
+    |> validate_required([Config.password_hash_field(changeset)])
   end
 
   @doc """
@@ -62,7 +62,7 @@ defmodule Passport.Authenticatable do
     changeset
     |> cast(params, [:password, :password_confirmation])
     |> hash_password!()
-    |> validate_required([Config.password_hash_field()])
+    |> validate_required([Config.password_hash_field(changeset)])
   end
 
   def check_password(_user, nil) do
@@ -76,7 +76,7 @@ defmodule Passport.Authenticatable do
   end
 
   def check_password(record, password) do
-    if checkpw(password, Map.get(record, Config.password_hash_field())) do
+    if checkpw(password, Map.get(record, Config.password_hash_field(record))) do
       {:ok, record}
     else
       {:error, {:unauthorized, record}}

@@ -1,5 +1,6 @@
 defmodule Passport do
   alias Passport.{
+    Activatable,
     Authenticatable,
     Confirmable,
     Lockable,
@@ -15,6 +16,7 @@ defmodule Passport do
   @type params :: map
 
   @feature_map %{
+    activatable: Activatable,
     authenticatable: Authenticatable,
     confirmable: Confirmable,
     lockable: Lockable,
