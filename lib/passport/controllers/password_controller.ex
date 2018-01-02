@@ -1,4 +1,34 @@
 defmodule Passport.PasswordController do
+  @moduledoc """
+  Controller for handling password resets
+
+  Example:
+
+  ```elixir
+  defmodule MyApp.Web.PasswordController do
+    use MyApp.Web, :view
+    use Passport.PasswordController
+
+    @impl true
+    def recoverable_model, do: MyApp.User
+
+    @impl true
+    def request_reset_password(params) do
+      email = params["email"]
+      MyApp.User
+      |> MyApp.Repo.get_by(email: email)
+      |> case do
+        nil -> {:error, :not_found}
+        user ->
+          user
+          |> Passport.prepare_reset_password()
+          |> MyApp.Repo.update()
+      end
+    end
+  end
+  ```
+  """
+
   defmacro __using__(opts) do
     quote location: :keep do
       alias Passport
