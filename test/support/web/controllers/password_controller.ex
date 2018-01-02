@@ -1,4 +1,4 @@
-defmodule Passport.Support.PasswordController do
+defmodule Passport.Support.Web.PasswordController do
   use Passport.Support.Web, :controller
   use Passport.PasswordController, recoverable_model: Passport.Support.User
 

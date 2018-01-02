@@ -11,10 +11,11 @@ defmodule Mix.Tasks.Passport.Init do
 
     Enum.each repos, fn repo ->
       case OptionParser.parse(args) do
-        {opts, [name, table_name], _} ->
+        {_opts, [name, table_name], _} ->
           ensure_repo(repo, args)
           path = migrations_path(repo)
-          file = Path.join(path, "#{timestamp()}_add_passport_fields_to_#{underscore(name)}.exs")
+          model_name = String.replace(underscore(name), "/", "_")
+          file = Path.join(path, "#{timestamp()}_add_passport_fields_to_#{model_name}.exs")
           create_directory path
 
           model = Module.concat([name])
@@ -33,7 +34,8 @@ defmodule Mix.Tasks.Passport.Init do
             |> List.flatten()
             |> Enum.join("\n")
 
-          mod = Module.concat([repo, Migrations, "AddPassportFieldsTo#{camelize(name)}"])
+          migration_model_name = String.replace(camelize(name), ".", "")
+          mod = Module.concat([repo, Migrations, "AddPassportFieldsTo#{migration_model_name}"])
           assigns = [mod: mod, change: change]
           create_file file, migration_template(assigns)
 
