@@ -18,6 +18,8 @@ defmodule Passport.Lockable do
     ]
   end
 
+  def migration_indices(_mod), do: []
+
   defp perform_lock(changeset) do
     case get_field(changeset, :failed_attempts) do
       # we check if the failed_attempts as if (v + 1) here

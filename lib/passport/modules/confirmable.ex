@@ -26,6 +26,13 @@ defmodule Passport.Confirmable do
     ]
   end
 
+  def migration_indices(_mod) do
+    # <users> will be replaced with the correct table name
+    [
+      "create unique_index(<users>, [:confirmation_token])"
+    ]
+  end
+
   alias Passport.Keygen
 
   def generate_confirmation_token do

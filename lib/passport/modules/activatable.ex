@@ -17,13 +17,15 @@ defmodule Passport.Activatable do
   def migration_fields(mod) do
     [
       "# Activatable",
-      if Passport.Config.activatable_is_flag(__MODULE__) do
+      if Passport.Config.activatable_is_flag(mod) do
         "add :active, :boolean, default: true"
       else
         "add :activated_at, :utc_datetime"
       end,
     ]
   end
+
+  def migration_indices(_mod), do: []
 
   @doc """
   Changeset for modifying the active state of the record

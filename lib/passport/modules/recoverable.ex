@@ -34,6 +34,13 @@ defmodule Passport.Recoverable do
     ]
   end
 
+  def migration_indices(_mod) do
+    # <users> will be replaced with the correct table name
+    [
+      "create unique_index(<users>, [:reset_password_token])"
+    ]
+  end
+
   def generate_reset_password_token do
     Keygen.random_string(128)
   end

@@ -23,6 +23,8 @@ defmodule Passport.Trackable do
     ]
   end
 
+  def migration_indices(_mod), do: []
+
   defp format_remote_ip({a, b, c, d}) do
     "#{a}.#{b}.#{c}.#{d}"
   end

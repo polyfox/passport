@@ -23,6 +23,8 @@ defmodule Passport.Authenticatable do
     ]
   end
 
+  def migration_indices(mod), do: []
+
   defp hash_password!(changeset) do
     changeset =
       changeset

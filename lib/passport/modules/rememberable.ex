@@ -11,4 +11,6 @@ defmodule Passport.Rememberable do
       "add :remember_created_at, :utc_datetime",
     ]
   end
+
+  def migration_indices(_mod), do: []
 end

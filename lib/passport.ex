@@ -55,6 +55,22 @@ defmodule Passport do
     end
   end
 
+  def migration_fields(user_mod) do
+    @feature_map
+    |> Enum.map(fn {_, mod} ->
+      mod.migration_fields(user_mod)
+    end)
+    |> List.flatten()
+  end
+
+  def migration_indices(user_mod) do
+    @feature_map
+    |> Enum.map(fn {_, mod} ->
+      mod.migration_indices(user_mod)
+    end)
+    |> List.flatten()
+  end
+
   @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | term
   def find_by_confirmation_token(query, nil), do: nil
   def find_by_confirmation_token(query, token) do
