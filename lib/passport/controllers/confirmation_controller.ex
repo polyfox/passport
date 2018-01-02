@@ -1,4 +1,20 @@
 defmodule Passport.ConfirmationController do
+  @moduledoc """
+  Mixin for ConfirmationController, use this module in your confirmation controller and implement the callback functions.
+
+  Example:
+
+  ```elixir
+  defmodule MyApp.Web.ConfirmationController do
+    use MyApp.Web, :controller
+    use Passport.ConfirmationController
+
+    @impl true
+    def confirmable_model, do: MyApp.User
+  end
+  ```
+  """
+
   defmacro __using__(opts) do
     quote location: :keep do
       @behaviour Passport.ConfirmationController
@@ -39,5 +55,10 @@ defmodule Passport.ConfirmationController do
     end
   end
 
+  @doc """
+  confirmable_model denotes what module represents the Confirmable entity.
+
+  If the confirmable entity is a User, then this function should return that module
+  """
   @callback confirmable_model() :: atom
 end
