@@ -1,4 +1,4 @@
-defmodule Passport.Auth.TwoFactorAuth do
+defmodule Passport.TwoFactorAuth do
   import Ecto.Changeset
   import Ecto.Query
 

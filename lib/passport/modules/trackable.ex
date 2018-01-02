@@ -1,4 +1,4 @@
-defmodule Passport.Auth.Trackable do
+defmodule Passport.Trackable do
   import Ecto.Changeset
 
   defmacro schema_fields do

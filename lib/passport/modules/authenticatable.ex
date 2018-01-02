@@ -1,4 +1,4 @@
-defmodule Passport.Auth.Authenticatable do
+defmodule Passport.Authenticatable do
   import Comeonin.Bcrypt,
     only: [checkpw: 2, dummy_checkpw: 0, hashpwsalt: 1]
 

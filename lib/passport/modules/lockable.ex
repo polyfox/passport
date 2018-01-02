@@ -1,4 +1,4 @@
-defmodule Passport.Auth.Lockable do
+defmodule Passport.Lockable do
   import Ecto.Changeset
   import Ecto.Query
 

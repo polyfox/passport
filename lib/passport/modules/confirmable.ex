@@ -1,4 +1,4 @@
-defmodule Passport.Auth.Confirmable do
+defmodule Passport.Confirmable do
   import Ecto.Changeset
   import Ecto.Query
 

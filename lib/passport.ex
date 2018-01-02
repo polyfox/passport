@@ -1,5 +1,5 @@
-defmodule Passport.Auth do
-  alias Passport.Auth.{
+defmodule Passport do
+  alias Passport.{
     Authenticatable,
     Confirmable,
     Lockable,
@@ -7,8 +7,8 @@ defmodule Passport.Auth do
     Rememberable,
     Trackable,
     TwoFactorAuth,
+    Repo
   }
-  alias Passport.Repo
 
   import Ecto.Changeset
 

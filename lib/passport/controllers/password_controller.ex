@@ -1,9 +1,9 @@
-defmodule Passport.Auth.PasswordController do
+defmodule Passport.PasswordController do
   defmacro __using__(_opts) do
     quote location: :keep do
-      alias Passport.Auth
+      alias Passport
 
-      @behaviour Passport.Auth.PasswordController
+      @behaviour Passport.PasswordController
 
       @doc """
       POST /password
@@ -30,10 +30,10 @@ defmodule Passport.Auth.PasswordController do
       * `token` - the reset password token
       """
       def update(conn, params) do
-        case Auth.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
+        case Passport.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
           nil -> send_not_found(conn)
           authenticatable ->
-            case Auth.reset_password(authenticatable, params) do
+            case Passport.reset_password(authenticatable, params) do
               {:ok, _authenticatable} ->
                 send_no_content(conn)
               {:error, %Ecto.Changeset{} = changeset} ->
@@ -51,10 +51,10 @@ defmodule Passport.Auth.PasswordController do
       * `token` - the reset password token
       """
       def delete(conn, _params) do
-        case Auth.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
+        case Passport.find_by_reset_password_token(recoverable_model(), conn.path_params["token"]) do
           nil -> send_not_found(conn)
           authenticatable ->
-            case Auth.clear_reset_password(authenticatable) do
+            case Passport.clear_reset_password(authenticatable) do
               {:ok, _authenticatable} ->
                 send_no_content(conn)
               {:error, %Ecto.Changeset{} = changeset} ->

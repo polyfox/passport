@@ -1,4 +1,4 @@
-defmodule Passport.Auth.Recoverable do
+defmodule Passport.Recoverable do
   import Ecto.Changeset
   import Ecto.Query
 

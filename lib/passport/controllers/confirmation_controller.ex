@@ -1,9 +1,7 @@
-defmodule Passport.Auth.ConfirmationController do
+defmodule Passport.ConfirmationController do
   defmacro __using__(_opts) do
     quote location: :keep do
-      alias Passport.Auth
-
-      @behaviour Passport.Auth.ConfirmationController
+      @behaviour Passport.ConfirmationController
 
       @doc """
       POST /confirm/:token
@@ -14,10 +12,10 @@ defmodule Passport.Auth.ConfirmationController do
       * `token` - the confirmable's confirmation token
       """
       def confirm(conn, params) do
-        case Auth.find_by_confirmation_token(confirmable_model(), conn.path_params["token"]) do
+        case Passport.find_by_confirmation_token(confirmable_model(), conn.path_params["token"]) do
           nil -> send_not_found(conn)
           confirmable ->
-            case Auth.confirm_email(confirmable) do
+            case Passport.confirm_email(confirmable) do
               {:ok, _} ->
                 send_no_content(conn)
               {:error, %Ecto.Changeset{} = changeset} ->
