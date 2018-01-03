@@ -5,6 +5,7 @@ config :passport,
   replica_repo: nil
 
 config :passport,
-  password_hash_field: :password_hash
+  password_hash_field: :password_hash,
+  sessions_client: nil
 
 import_config "#{Mix.env()}.exs"

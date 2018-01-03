@@ -1,5 +1,8 @@
 use Mix.Config
 
+config :passport,
+  error_view: Passport.Support.Web.ErrorView
+
 # Configures the endpoint
 config :passport, Passport.Support.Web.Endpoint,
   url: [host: "localhost", port: 4001],

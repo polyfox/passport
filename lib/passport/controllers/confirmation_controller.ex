@@ -37,7 +37,7 @@ defmodule Passport.ConfirmationController do
           nil ->
             conn
             |> put_status(404)
-            |> render("not_found.json")
+            |> render(Passport.Config.error_view(), "404.json")
           confirmable ->
             case Passport.confirm_email(confirmable) do
               {:ok, record} ->
@@ -48,7 +48,7 @@ defmodule Passport.ConfirmationController do
                 # this should like.. never happen, but you know, shit happens
                 conn
                 |> put_status(422)
-                |> render("error.json", changeset: changeset)
+                |> render(Passport.Config.error_view(), "error.json", changeset: changeset)
             end
         end
       end
