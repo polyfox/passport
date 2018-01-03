@@ -23,7 +23,7 @@ defmodule Passport.Support.Web.Router do
     pipe_through :api
 
     scope "/account" do
-      Passport.routes([:authenticatable, :confirmable, :recoverable], [stage: :open])
+      Passport.routes([:authenticatable, :confirmable, :recoverable])
     end
   end
 
@@ -31,8 +31,10 @@ defmodule Passport.Support.Web.Router do
     pipe_through :protected
     pipe_through :api
 
+    get "/protected_content", PageController, :protected_content
+
     scope "/account" do
-      Passport.routes([:authenticatable], [stage: :protected])
+      #Passport.routes([:authenticatable])
     end
   end
 end

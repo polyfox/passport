@@ -1,7 +1,8 @@
 use Mix.Config
 
 config :passport,
-  error_view: Passport.Support.Web.ErrorView
+  error_view: Passport.Support.Web.ErrorView,
+  sessions_client: Passport.Support.Sessions
 
 # Configures the endpoint
 config :passport, Passport.Support.Web.Endpoint,

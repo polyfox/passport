@@ -1,7 +1,7 @@
 defmodule Passport.SessionController do
   @moduledoc """
   """
-  defmacro __using__(opts) do
+  defmacro __using__(_opts) do
     quote location: :keep do
       require Passport.Config
 

@@ -12,6 +12,11 @@ defmodule Passport.Trackable do
     end
   end
 
+  defmacro routes(_opts \\ []) do
+    quote do
+    end
+  end
+
   def migration_fields(_mod) do
     [
       "# Trackable",

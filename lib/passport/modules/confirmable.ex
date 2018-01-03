@@ -10,7 +10,7 @@ defmodule Passport.Confirmable do
     end
   end
 
-  defmacro routes do
+  defmacro routes(_opts \\ []) do
     quote do
       # Confirm user email
       post "/confirm/:token", ConfirmationController, :confirm

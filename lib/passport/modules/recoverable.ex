@@ -13,7 +13,7 @@ defmodule Passport.Recoverable do
     end
   end
 
-  defmacro routes do
+  defmacro routes(_opts \\ []) do
     quote do
       # Request a password reset
       post "/password", PasswordController, :create

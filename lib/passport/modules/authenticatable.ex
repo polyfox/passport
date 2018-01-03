@@ -16,6 +16,12 @@ defmodule Passport.Authenticatable do
     end
   end
 
+  defmacro routes(_opts \\ []) do
+    quote do
+      post "/login", SessionController, :create
+    end
+  end
+
   def migration_fields(mod) do
     [
       "# Authenticatable",
