@@ -3,13 +3,13 @@ defmodule Passport.Config do
   Module for handling passport's configuration
   """
 
-  def namespace_for(nil), do: nil
-  def namespace_for(atom) when is_atom(atom), do: atom
-  def namespace_for(%Ecto.Changeset{data: data}), do: namespace_for(data)
-  def namespace_for(%{__struct__: st}), do: st
+  def module_for(nil), do: nil
+  def module_for(atom) when is_atom(atom), do: atom
+  def module_for(%Ecto.Changeset{data: data}), do: module_for(data)
+  def module_for(%{__struct__: st}), do: st
 
   def get_env(namespace, name, default \\ nil) do
-    ns = namespace_for(namespace)
+    ns = module_for(namespace)
     case Application.get_env(:passport, ns) do
       nil -> Application.get_env(:passport, name, default)
       conf -> Keyword.get(conf, name, default)
@@ -36,12 +36,8 @@ defmodule Passport.Config do
     Application.get_env(:passport, :error_view)
   end
 
-  @doc """
-  Checks if the entity supports TFA
-  """
-  @spec feature_two_factor_auth?(entity :: term) :: boolean
-  def feature_two_factor_auth?(entity) do
-    # TODO: this should check if the entity has the 2fa module loaded
-    true
+  @spec features?(entity :: term, feature :: atom) :: boolean
+  def features?(entity, feature) do
+    module_for(entity).passport_feature?(feature)
   end
 end

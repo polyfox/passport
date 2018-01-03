@@ -99,7 +99,7 @@ defmodule Passport.Sessions do
     |> sessions_client.check_authentication(password)
     |> case do
       {:ok, entity} ->
-        if Config.feature_two_factor_auth?(entity) && entity.tfa_enabled do
+        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
           case TwoFactorAuth.check_totp(entity, otp) do
             {:error, :tfa_disabled} -> true
             other -> other

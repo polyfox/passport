@@ -22,6 +22,7 @@ defmodule Passport.Support.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Passport.Support.DataCase
+      import Passport.Support.Factory
     end
   end
 

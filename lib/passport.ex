@@ -2,6 +2,7 @@ require Passport.Repo
 
 defmodule Passport do
   alias Passport.{
+    Config,
     Activatable,
     Authenticatable,
     Confirmable,
@@ -213,9 +214,9 @@ defmodule Passport do
     case Authenticatable.check_password(record, password) do
       {:ok, record} ->
         cond do
-          !record.active -> {:error, :inactive}
-          !record.confirmed_at -> {:error, :unconfirmed}
-          record.locked_at -> {:error, :locked}
+          Config.features?(record, :activatable) && !record.active -> {:error, :inactive}
+          Config.features?(record, :confirmable) && !record.confirmed_at -> {:error, :unconfirmed}
+          Config.features?(record, :lockable) && record.locked_at -> {:error, :locked}
           true -> {:ok, record}
         end
 
