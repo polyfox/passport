@@ -3,6 +3,8 @@ defmodule Passport.SessionController do
   """
   defmacro __using__(opts) do
     quote location: :keep do
+      require Passport.Config
+
       @doc """
       POST /login
 
@@ -33,7 +35,7 @@ defmodule Passport.SessionController do
 
           {:error, {:missing, :otp}} ->
             conn
-            |> put_resp_header(Config.otp_header_name(), "required")
+            |> put_resp_header(Passport.Config.otp_header_name(), "required")
             |> Passport.APIHelper.send_unauthorized(reason: "Missing otp code")
 
           {:error, {:missing, attr}} ->
