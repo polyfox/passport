@@ -31,12 +31,32 @@ defmodule Passport do
   @all_schema_keys Map.keys(@feature_map)
   @all_routeable_keys [:recoverable, :confirmable]
 
+  defmacro schema(features \\ @all_schema_keys) do
+    quote location: :keep do
+      @passport_enabled_features unquote(features)
+
+      defmacro passport_enabled_features do
+        @passport_enabled_features
+      end
+
+      def passport_feature?(feature) do
+        Enum.member?(passport_enabled_features(), feature)
+      end
+
+      unquote_splicing Enum.map(features, fn feature ->
+        mod = Map.fetch!(@feature_map, feature)
+        quote do
+          require unquote(mod)
+        end
+      end)
+    end
+  end
+
   defmacro schema_fields(features \\ @all_schema_keys) do
     quote do
       unquote_splicing Enum.map(features, fn feature ->
         mod = Map.fetch!(@feature_map, feature)
         quote do
-          require unquote(mod)
           unquote(mod).schema_fields()
         end
       end)
