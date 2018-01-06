@@ -35,20 +35,15 @@ defmodule Passport.ConfirmationController do
       def confirm(conn, params) do
         case Passport.find_by_confirmation_token(confirmable_model(), conn.path_params["token"]) do
           nil ->
-            conn
-            |> put_status(404)
-            |> render(Passport.Config.error_view(), "404.json")
+            Passport.APIHelper.send_not_found(conn)
           confirmable ->
             case Passport.confirm_email(confirmable) do
               {:ok, record} ->
-                conn
-                |> put_status(204)
-                |> render("no_content.json")
+                Passport.APIHelper.send_no_content(conn)
+
               {:error, %Ecto.Changeset{} = changeset} ->
                 # this should like.. never happen, but you know, shit happens
-                conn
-                |> put_status(422)
-                |> render(Passport.Config.error_view(), "error.json", changeset: changeset)
+                Passport.APIHelper.send_changeset_error(conn, changeset: changeset)
             end
         end
       end
