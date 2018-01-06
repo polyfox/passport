@@ -10,7 +10,7 @@ defmodule Passport.TrackableTest do
 
     test "formats a ipv6 address" do
       assert "::1" == Trackable.format_remote_ip({0, 0, 0, 0, 0, 0, 0, 1})
-      assert "::FFFF:AC12:1" == Trackable.format_remote_ip({0, 0, 0, 0, 0, 65535, 44050, 1})
+      assert "::ffff:172.18.0.1" == Trackable.format_remote_ip({0, 0, 0, 0, 0, 65535, 44050, 1})
     end
   end
 end

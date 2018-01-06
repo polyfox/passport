@@ -30,23 +30,10 @@ defmodule Passport.Trackable do
 
   def migration_indices(_mod), do: []
 
-  def format_remote_ip({a, b, c, d}) do
-    "#{a}.#{b}.#{c}.#{d}"
-  end
-
-  def format_remote_ip({a, b, c, d, e, f, g, h}) do
-    [a, b, c, d, e, f, g, h]
-    |> Enum.map(fn num ->
-      num
-      |> Integer.to_string(16)
-      |> String.trim_leading("0")
-      |> case do
-        "" -> "0"
-        str -> str
-      end
-    end)
-    |> Enum.join(":")
-    |> String.replace(~r/(0:)+/, "::")
+  def format_remote_ip(tup) do
+    tup
+    |> :inet_parse.ntoa()
+    |> to_string()
   end
 
   @spec track_sign_in(Ecto.Changeset.t, remote_ip :: term) :: {:ok, User.t} | {:error, term}
