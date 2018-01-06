@@ -8,6 +8,11 @@ defmodule Passport.Support.Users do
   def find_user_by_email(email) do
     User
     |> where(email: ^email)
-    |> Repo.primary().one()
+    |> Repo.replica().one()
+  end
+
+  def get_user(id) do
+    User
+    |> Repo.replica().get(id)
   end
 end
