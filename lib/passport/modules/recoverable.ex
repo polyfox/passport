@@ -13,16 +13,17 @@ defmodule Passport.Recoverable do
     end
   end
 
-  defmacro routes(_opts \\ []) do
+  defmacro routes(opts \\ []) do
+    recoverable_controller = Keyword.get(opts, :recoverable_controller, PasswordController)
     quote do
       # Request a password reset
-      post "/password", PasswordController, :create
+      post "/password", unquote(recoverable_controller), :create
       # Reset password - pick your poison (by verb)
-      post "/password/:token", PasswordController, :update
-      patch "/password/:token", PasswordController, :update
-      put "/password/:token", PasswordController, :update
+      post "/password/:token", unquote(recoverable_controller), :update
+      patch "/password/:token", unquote(recoverable_controller), :update
+      put "/password/:token", unquote(recoverable_controller), :update
       # Clear reset password
-      delete "/password/:token", PasswordController, :delete
+      delete "/password/:token", unquote(recoverable_controller), :delete
     end
   end
 

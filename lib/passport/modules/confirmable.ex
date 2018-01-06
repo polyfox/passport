@@ -10,10 +10,11 @@ defmodule Passport.Confirmable do
     end
   end
 
-  defmacro routes(_opts \\ []) do
+  defmacro routes(opts \\ []) do
+    confirmable_controller = Keyword.get(opts, :confirmable_controller, ConfirmationController)
     quote do
       # Confirm user email
-      post "/confirm/:token", ConfirmationController, :confirm
+      post "/confirm/:token", unquote(confirmable_controller), :confirm
     end
   end
 

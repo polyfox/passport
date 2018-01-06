@@ -64,13 +64,13 @@ defmodule Passport do
     end
   end
 
-  defmacro routes(features \\ @all_routeable_keys) do
+  defmacro routes(features \\ @all_routeable_keys, opts \\ []) do
     quote do
       unquote_splicing Enum.map(features, fn feature ->
         mod = Map.fetch!(@feature_map, feature)
         quote do
           require unquote(mod)
-          unquote(mod).routes()
+          unquote(mod).routes(unquote(opts))
         end
       end)
     end
