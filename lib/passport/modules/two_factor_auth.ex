@@ -53,14 +53,21 @@ defmodule Passport.TwoFactorAuth do
     |> unique_constraint(:tfa_otp_secret_key)
   end
 
+  @doc """
+  Check the totp regardless of if tfa_enabled state
+  """
+  def abs_check_totp(record, totp) do
+    secret = record.tfa_otp_secret_key
+    :pot.valid_totp(totp, secret, window: 1, addWindow: 1)
+  end
+
   @spec check_totp(record :: term, totp :: String.t) :: boolean | {:error, term}
   def check_totp(_record, nil) do
     {:error, {:missing, :otp}}
   end
 
   def check_totp(%{tfa_enabled: true} = record, totp) do
-    secret = record.tfa_otp_secret_key
-    :pot.valid_totp(totp, secret, window: 1, addWindow: 1)
+    abs_check_totp(record, totp)
   end
 
   def check_totp(_record, _totp) do
