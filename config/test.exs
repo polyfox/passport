@@ -26,3 +26,5 @@ config :passport, Passport.Support.Repo,
 config :passport,
   primary_repo: Passport.Support.Repo,
   replica_repo: Passport.Support.Repo
+
+config :logger, level: :warn

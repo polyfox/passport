@@ -209,14 +209,38 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
+  def entity_activated?(record) do
+    if Config.features?(record, :activatable) do
+      record.active
+    else
+      true
+    end
+  end
+
+  def entity_confirmed?(record) do
+    if Config.features?(record, :confirmable) do
+      !!record.confirmed_at
+    else
+      true
+    end
+  end
+
+  def entity_locked?(record) do
+    if Config.features?(record, :lockable) do
+      !!record.locked_at
+    else
+      false
+    end
+  end
+
   @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}
   def check_authenticatable(record, password) do
     case Authenticatable.check_password(record, password) do
       {:ok, record} ->
         cond do
-          Config.features?(record, :activatable) && !record.active -> {:error, :inactive}
-          Config.features?(record, :confirmable) && !record.confirmed_at -> {:error, :unconfirmed}
-          Config.features?(record, :lockable) && record.locked_at -> {:error, :locked}
+          not entity_activated?(record) -> {:error, :inactive}
+          not entity_confirmed?(record) -> {:error, :unconfirmed}
+          entity_locked?(record) -> {:error, :locked}
           true -> {:ok, record}
         end
 
