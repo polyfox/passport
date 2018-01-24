@@ -51,4 +51,9 @@ defmodule Passport.Lockable do
     changeset
     |> put_change(:failed_attempts, 0)
   end
+
+  def unlock_changeset(changeset) do
+    changeset
+    |> put_change(:locked_at, nil)
+  end
 end

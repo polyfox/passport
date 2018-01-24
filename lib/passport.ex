@@ -249,7 +249,9 @@ defmodule Passport do
     changeset = change(entity)
     changeset = if Config.features?(entity, :lockable) do
       # clear failed_attempts
-      Lockable.clear_failed_attempts(changeset)
+      changeset
+      |> Lockable.clear_failed_attempts()
+      |> Lockable.unlock_changeset()
     else
       changeset
     end
