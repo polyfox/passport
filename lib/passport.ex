@@ -130,6 +130,22 @@ defmodule Passport do
     |> Repo.primary().update(force: true)
   end
 
+  @spec prepare_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def prepare_confirmation(entity) do
+    entity
+    |> change()
+    |> Confirmable.prepare_confirmation()
+    |> Repo.primary().update()
+  end
+
+  @spec cancel_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def cancel_confirmation(entity) do
+    entity
+    |> change()
+    |> Confirmable.cancel_confirmation()
+    |> Repo.primary().update()
+  end
+
   @spec confirm_email(Ecto.Changeset.t | term) :: {:ok, term} | {:error, term}
   def confirm_email(entity) do
     entity
