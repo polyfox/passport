@@ -15,10 +15,15 @@ defmodule Passport.TwoFactorAuthController do
       """
       def create(conn, params) do
         case Passport.Sessions.authenticate_entity(params["email"], params["password"]) do
+          {:ok, %{tfa_enabled: true} = entity} ->
+            Passport.APIHelper.send_unauthorized(conn, reason: "TFA already enabled")
+
           {:ok, entity} ->
             case Passport.prepare_tfa_confirmation(entity) do
               {:ok, entity} ->
-                render conn, "show.json", data: entity
+                conn
+                |> put_status(201)
+                |> render("show.json", data: entity)
 
               {:error, %Ecto.Changeset{} = changeset} ->
                 Passport.APIHelper.send_changeset_error(conn, changeset: changeset)
@@ -64,7 +69,8 @@ defmodule Passport.TwoFactorAuthController do
                 Passport.APIHelper.send_unauthorized(conn, reason: "otp mismatch")
               true ->
                 case Passport.confirm_tfa(entity) do
-                  {:ok, entity} -> render conn, "show.json", data: entity
+                  {:ok, entity} ->
+                    Passport.APIHelper.send_no_content(conn)
                   {:error, %Ecto.Changeset{} = changeset} ->
                     Passport.APIHelper.send_changeset_error(conn, changeset: changeset)
                 end

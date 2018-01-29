@@ -23,7 +23,7 @@ defmodule Passport.Support.Web.Router do
     pipe_through :api
 
     scope "/account" do
-      Passport.routes([:authenticatable, :confirmable, :recoverable])
+      Passport.routes([:authenticatable, :two_factor_auth, :confirmable, :recoverable])
     end
   end
 

@@ -15,10 +15,10 @@ defmodule Passport.TwoFactorAuth do
   defmacro routes(opts \\ []) do
     two_factor_auth_controller = Keyword.get(opts, :two_factor_auth_controller, TwoFactorAuthController)
     quote do
-      post "/account/confirm/tfa", unquote(two_factor_auth_controller), :create
-      get "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :show
-      post "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :confirm
-      delete "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :delete
+      post "/confirm/tfa", unquote(two_factor_auth_controller), :create
+      get "/confirm/tfa/:token", unquote(two_factor_auth_controller), :show
+      post "/confirm/tfa/:token", unquote(two_factor_auth_controller), :confirm
+      delete "/confirm/tfa/:token", unquote(two_factor_auth_controller), :delete
     end
   end
 
