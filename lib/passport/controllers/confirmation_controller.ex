@@ -62,7 +62,7 @@ defmodule Passport.ConfirmationController do
   @doc """
   confirmable_model denotes what module represents the Confirmable entity.
 
-  If the confirmable entity is a User, then this function should return that module
+  This function should return a valid Ecto.Schema model
   """
   @callback confirmable_model() :: atom
 

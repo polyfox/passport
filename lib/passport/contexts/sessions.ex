@@ -86,6 +86,14 @@ defmodule Passport.Sessions do
     sessions_client.find_entity_by_identity(identity)
   end
 
+  @spec authenticate_entity(String.t, String.t) :: {:ok, term} | {:error, term}
+  def authenticate_entity(identity, password) do
+    sessions_client = Config.sessions_client()
+    identity
+    |> find_entity_by_identity()
+    |> sessions_client.check_authentication(password)
+  end
+
   @doc """
   Creates a new session and returns a corresponding token to identify it
 
@@ -101,8 +109,7 @@ defmodule Passport.Sessions do
     # ident = identity/username, auth = password
     sessions_client = Config.sessions_client()
     identity
-    |> find_entity_by_identity()
-    |> sessions_client.check_authentication(password)
+    |> authenticate_entity(password)
     |> case do
       {:ok, entity} ->
         if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do

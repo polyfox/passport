@@ -108,6 +108,59 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
+  @spec find_by_tfa_confirmation_token(query :: term, token :: String.t) :: nil | term
+  def find_by_tfa_confirmation_token(query, nil), do: nil
+  def find_by_tfa_confirmation_token(query, token) do
+    query
+    |> TwoFactorAuth.by_tfa_confirmation_token(token)
+    |> Repo.replica().one()
+  end
+
+  def prepare_tfa_confirmation(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.prepare_tfa_confirmation()
+    |> Repo.primary().update()
+  end
+
+  def confirm_tfa(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.confirm_tfa()
+    |> Repo.primary().update()
+  end
+
+  def cancel_tfa_confirmation(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.cancel_tfa_confirmation()
+    |> Repo.primary().update()
+  end
+
+  def entity_activated?(entity) do
+    if Config.features?(entity, :activatable) do
+      entity.active
+    else
+      true
+    end
+  end
+
+  def entity_confirmed?(entity) do
+    if Config.features?(entity, :confirmable) do
+      !!entity.confirmed_at
+    else
+      true
+    end
+  end
+
+  def entity_locked?(entity) do
+    if Config.features?(entity, :lockable) do
+      !!entity.locked_at
+    else
+      false
+    end
+  end
+
   @spec track_failed_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
   def track_failed_attempts(entity, remote_ip) do
     entity
@@ -274,28 +327,7 @@ defmodule Passport do
     Repo.primary().update(changeset)
   end
 
-  def entity_activated?(entity) do
-    if Config.features?(entity, :activatable) do
-      entity.active
-    else
-      true
-    end
-  end
-
-  def entity_confirmed?(entity) do
-    if Config.features?(entity, :confirmable) do
-      !!entity.confirmed_at
-    else
-      true
-    end
-  end
-
-  def entity_locked?(entity) do
-    if Config.features?(entity, :lockable) do
-      !!entity.locked_at
-    else
-      false
-    end
+  def cancel_tfa_confirmation do
   end
 
   @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}

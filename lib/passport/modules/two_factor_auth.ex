@@ -4,20 +4,29 @@ defmodule Passport.TwoFactorAuth do
 
   defmacro schema_fields do
     quote do
+      field :tfa_confirmation_token, :string
+      field :tfa_confirmed_at, :utc_datetime
       field :tfa_otp_secret_key, :string
       field :tfa_enabled, :boolean, default: false
       field :tfa_attempts_count, :integer, default: 0
     end
   end
 
-  defmacro routes(_opts \\ []) do
+  defmacro routes(opts \\ []) do
+    two_factor_auth_controller = Keyword.get(opts, :two_factor_auth_controller, TwoFactorAuthController)
     quote do
+      post "/account/confirm/tfa", unquote(two_factor_auth_controller), :create
+      get "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :show
+      post "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :confirm
+      delete "/account/confirm/tfa/:token", unquote(two_factor_auth_controller), :delete
     end
   end
 
   def migration_fields(_mod) do
     [
       "# TwoFactorAuth",
+      "add :tfa_confirmation_token, :string",
+      "add :tfa_confirmed_at, :utc_datetime",
       "add :tfa_otp_secret_key, :string",
       "add :tfa_enabled, :boolean",
       "add :tfa_attempts_count, :integer, default: 0",
@@ -27,7 +36,8 @@ defmodule Passport.TwoFactorAuth do
   def migration_indices(_mod) do
     # <users> will be replaced with the correct table name
     [
-      "create unique_index(<users>, [:tfa_otp_secret_key])"
+      "create unique_index(<users>, [:tfa_otp_secret_key])",
+      "create unique_index(<users>, [:tfa_confirmation_token])",
     ]
   end
 
@@ -35,6 +45,42 @@ defmodule Passport.TwoFactorAuth do
 
   def generate_secret_key do
     Keygen.random_string32(16)
+  end
+
+  def generate_tfa_confirmation_token do
+    Keygen.random_string(128)
+  end
+
+  @doc """
+  Confirm that TFA should be enabled for the provided entity.
+  """
+  @spec confirm_tfa(Ecto.Changeset.t) :: Ecto.Changeset.t
+  def confirm_tfa(changeset) do
+    changeset
+    |> put_change(:tfa_confirmation_token, nil)
+    |> put_change(:tfa_confirmed_at, DateTime.utc_now())
+    |> put_change(:tfa_enabled, true)
+  end
+
+  def new_tfa_confirmation(changeset) do
+    changeset
+    |> put_change(:tfa_confirmation_token, generate_tfa_confirmation_token())
+  end
+
+  def prepare_tfa_confirmation(changeset) do
+    changeset
+    |> new_tfa_confirmation()
+    |> put_change(:tfa_confirmed_at, nil)
+    |> put_change(:tfa_enabled, false)
+  end
+
+  def cancel_tfa_confirmation(changeset) do
+    changeset
+    |> put_change(:tfa_confirmation_token, nil)
+  end
+
+  def by_tfa_confirmation_token(query, token) do
+    where(query, tfa_confirmation_token: ^token)
   end
 
   defp patch_tfa_otp_secret_key(changeset) do
@@ -56,6 +102,7 @@ defmodule Passport.TwoFactorAuth do
   @doc """
   Check the totp regardless of if tfa_enabled state
   """
+  @spec abs_check_totp(term, String.t) :: boolean
   def abs_check_totp(record, totp) do
     secret = record.tfa_otp_secret_key
     :pot.valid_totp(totp, secret, window: 1, addWindow: 1)
