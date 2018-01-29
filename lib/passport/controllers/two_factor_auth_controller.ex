@@ -56,11 +56,12 @@ defmodule Passport.TwoFactorAuthController do
       POST /account/confirm/tfa/:token
       """
       def confirm(conn, params) do
-        case Passport.find_by_tfa_confirmation_token(params["token"]) do
+        case Passport.find_by_tfa_confirmation_token(two_factor_auth_model(), params["token"]) do
           nil -> Passport.APIHelper.send_not_found(conn)
           entity ->
-            case TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
-              false -> send_unauthorized(conn, reason: "otp mismatch")
+            case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
+              false ->
+                Passport.APIHelper.send_unauthorized(conn, reason: "otp mismatch")
               true ->
                 case Passport.confirm_tfa(entity) do
                   {:ok, entity} -> render conn, "show.json", data: entity
@@ -75,7 +76,7 @@ defmodule Passport.TwoFactorAuthController do
       DELETE /account/confirm/tfa/:token
       """
       def delete(conn, params) do
-        case Passport.find_by_tfa_confirmation_token(params["token"]) do
+        case Passport.find_by_tfa_confirmation_token(two_factor_auth_model(), params["token"]) do
           nil -> Passport.APIHelper.send_not_found(conn)
           entity ->
             case Passport.cancel_tfa_confirmation(entity) do
