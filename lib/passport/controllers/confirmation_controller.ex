@@ -25,7 +25,21 @@ defmodule Passport.ConfirmationController do
       end
 
       @doc """
-      POST /confirm/:token
+      POST /confirm/email
+      """
+      def create(conn, params) do
+        Passport.ConfirmationController.create(__MODULE__, conn, params)
+      end
+
+      @doc """
+      GET /confirm/email/:token
+      """
+      def show(conn, params) do
+        Passport.ConfirmationController.show(__MODULE__, conn, params)
+      end
+
+      @doc """
+      POST /confirm/email/:token
 
       Confirm the email for a given confirmable.
 
@@ -33,19 +47,14 @@ defmodule Passport.ConfirmationController do
       * `token` - the confirmable's confirmation token
       """
       def confirm(conn, params) do
-        case Passport.find_by_confirmation_token(confirmable_model(), conn.path_params["token"]) do
-          nil ->
-            Passport.APIHelper.send_not_found(conn)
-          confirmable ->
-            case Passport.confirm_email(confirmable) do
-              {:ok, record} ->
-                Passport.APIHelper.send_no_content(conn)
+        Passport.ConfirmationController.confirm(__MODULE__, conn, params)
+      end
 
-              {:error, %Ecto.Changeset{} = changeset} ->
-                # this should like.. never happen, but you know, shit happens
-                Passport.APIHelper.send_changeset_error(conn, changeset: changeset)
-            end
-        end
+      @doc """
+      DELETE /confirm/email/:token
+      """
+      def delete(conn, params) do
+        Passport.ConfirmationController.delete(__MODULE__, conn, params)
       end
     end
   end
@@ -56,4 +65,54 @@ defmodule Passport.ConfirmationController do
   If the confirmable entity is a User, then this function should return that module
   """
   @callback confirmable_model() :: atom
+
+  import Passport.APIHelper
+
+  def create(_controller, conn, params) do
+    case Passport.Sessions.find_entity_by_identity(params["email"]) do
+      nil -> send_not_found(conn)
+      entity ->
+        case Passport.prepare_confirmation(entity) do
+          {:ok, _entity} -> send_no_content(conn)
+          {:error, %Ecto.Changeset{} = changeset} ->
+            send_changeset_error(conn, changeset: changeset)
+        end
+    end
+  end
+
+  def show(controller, conn, params) do
+    case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
+      nil -> send_not_found(conn)
+      confirmable -> Phoenix.Controller.render(conn, "show.json", data: confirmable)
+    end
+  end
+
+  def confirm(controller, conn, params) do
+    case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
+      nil -> send_not_found(conn)
+      confirmable ->
+        case Passport.confirm_email(confirmable) do
+          {:ok, _entity} ->
+            send_no_content(conn)
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            # this should like.. never happen, but you know, shit happens
+            send_changeset_error(conn, changeset: changeset)
+        end
+    end
+  end
+
+  def delete(controller, conn, params) do
+    case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
+      nil -> send_not_found(conn)
+      confirmable ->
+        case Passport.cancel_confirmation(confirmable) do
+          {:ok, entity} ->
+            send_not_found(conn)
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            send_changeset_error(conn, changeset: changeset)
+        end
+    end
+  end
 end

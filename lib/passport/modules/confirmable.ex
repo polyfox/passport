@@ -14,7 +14,10 @@ defmodule Passport.Confirmable do
     confirmable_controller = Keyword.get(opts, :confirmable_controller, ConfirmationController)
     quote do
       # Confirm user email
-      post "/confirm/:token", unquote(confirmable_controller), :confirm
+      post "/confirm/email", unquote(confirmable_controller), :create
+      get "/confirm/email/:token", unquote(confirmable_controller), :show
+      post "/confirm/email/:token", unquote(confirmable_controller), :confirm
+      delete "/confirm/email/:token", unquote(confirmable_controller), :delete
     end
   end
 
@@ -52,6 +55,12 @@ defmodule Passport.Confirmable do
     |> put_change(:confirmation_token, generate_confirmation_token())
     |> put_change(:confirmation_sent_at, DateTime.utc_now())
     |> put_change(:confirmed_at, nil)
+  end
+
+  def cancel_confirmation(changeset) do
+    changeset
+    |> put_change(:confirmation_token, nil)
+    |> put_change(:confirmation_sent_at, nil)
   end
 
   def by_confirmation_token(query, token) do

@@ -80,6 +80,12 @@ defmodule Passport.Sessions do
     end
   end
 
+  @spec find_entity_by_identity(String.t) :: nil | term
+  def find_entity_by_identity(identity) do
+    sessions_client = Config.sessions_client()
+    sessions_client.find_entity_by_identity(identity)
+  end
+
   @doc """
   Creates a new session and returns a corresponding token to identify it
 
@@ -95,7 +101,7 @@ defmodule Passport.Sessions do
     # ident = identity/username, auth = password
     sessions_client = Config.sessions_client()
     identity
-    |> sessions_client.find_entity_by_identity()
+    |> find_entity_by_identity()
     |> sessions_client.check_authentication(password)
     |> case do
       {:ok, entity} ->
