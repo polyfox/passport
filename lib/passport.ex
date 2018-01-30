@@ -108,32 +108,10 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
-  @spec find_by_tfa_confirmation_token(query :: term, token :: String.t) :: nil | term
-  def find_by_tfa_confirmation_token(query, nil), do: nil
-  def find_by_tfa_confirmation_token(query, token) do
-    query
-    |> TwoFactorAuth.by_tfa_confirmation_token(token)
-    |> Repo.replica().one()
-  end
-
-  def prepare_tfa_confirmation(entity) do
-    entity
-    |> change()
-    |> TwoFactorAuth.prepare_tfa_confirmation()
-    |> Repo.primary().update()
-  end
-
   def confirm_tfa(entity) do
     entity
     |> change()
     |> TwoFactorAuth.confirm_tfa()
-    |> Repo.primary().update()
-  end
-
-  def cancel_tfa_confirmation(entity) do
-    entity
-    |> change()
-    |> TwoFactorAuth.cancel_tfa_confirmation()
     |> Repo.primary().update()
   end
 
@@ -181,6 +159,14 @@ defmodule Passport do
     # entity has not changed and will not execute the update,
     # force: true, here ensures that the prepare_changes is ran
     |> Repo.primary().update(force: true)
+  end
+
+  @spec prepare_tfa_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def prepare_tfa_confirmation(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.prepare_tfa_confirmation()
+    |> Repo.primary().update()
   end
 
   @spec prepare_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
@@ -325,9 +311,6 @@ defmodule Passport do
       changeset
     end
     Repo.primary().update(changeset)
-  end
-
-  def cancel_tfa_confirmation do
   end
 
   @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}

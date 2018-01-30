@@ -86,12 +86,27 @@ defmodule Passport.Sessions do
     sessions_client.find_entity_by_identity(identity)
   end
 
-  @spec authenticate_entity(String.t, String.t) :: {:ok, term} | {:error, term}
-  def authenticate_entity(identity, password) do
+  @spec authenticate_entity(String.t, String.t, String.t) :: {:ok, term} | {:error, term}
+  def authenticate_entity(identity, password, otp \\ nil) do
     sessions_client = Config.sessions_client()
     identity
     |> find_entity_by_identity()
     |> sessions_client.check_authentication(password)
+    |> case do
+      {:ok, entity} ->
+        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
+          TwoFactorAuth.check_totp(entity, otp)
+        else
+          {:ok, true}
+        end
+        |> case do
+          {:error, _} = err -> err
+          {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
+          {:ok, true} -> {:ok, entity}
+        end
+
+      {:error, _} = err -> err
+    end
   end
 
   @doc """
@@ -109,22 +124,9 @@ defmodule Passport.Sessions do
     # ident = identity/username, auth = password
     sessions_client = Config.sessions_client()
     identity
-    |> authenticate_entity(password)
+    |> authenticate_entity(password, otp)
     |> case do
-      {:ok, entity} ->
-        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
-          case TwoFactorAuth.check_totp(entity, otp) do
-            {:error, :tfa_disabled} -> true
-            other -> other
-          end
-        else
-          true
-        end
-        |> case do
-          {:error, _} = err -> err
-          false -> {:error, {:unauthorized_tfa, entity}}
-          true -> sessions_client.create_session(entity)
-        end
+      {:ok, entity} -> sessions_client.create_session(entity)
       {:error, _} = err -> err
     end
   end

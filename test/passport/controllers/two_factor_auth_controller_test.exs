@@ -2,8 +2,10 @@ defmodule Passport.TwoFactorAuthControllerTest do
   use Passport.Support.Web.ConnCase
 
   describe "POST /account/confirm/tfa" do
-    test "creates a tfa confirmation request", %{conn: conn} do
+    test "can reset tfa_otp_secret_key", %{conn: conn} do
       user = insert(:user)
+      old_tfa_otp_secret_key = user.tfa_otp_secret_key
+      assert old_tfa_otp_secret_key
       conn = post conn, "/account/confirm/tfa", %{
         "email" => user.email,
         "password" => user.password
@@ -13,7 +15,26 @@ defmodule Passport.TwoFactorAuthControllerTest do
 
       user = Passport.Repo.replica().get(Passport.Support.User, user.id)
       assert user.id == data["id"]
-      assert user.tfa_confirmation_token == data["tfa_confirmation_token"]
+      assert user.tfa_otp_secret_key == data["tfa_otp_secret_key"]
+      refute old_tfa_otp_secret_key == data["tfa_otp_secret_key"]
+    end
+
+    test "can reset tfa_otp_secret_key with tfa enabled and otp provided", %{conn: conn} do
+      user = insert(:user, tfa_enabled: true)
+      old_tfa_otp_secret_key = user.tfa_otp_secret_key
+      assert old_tfa_otp_secret_key
+      conn = post conn, "/account/confirm/tfa", %{
+        "email" => user.email,
+        "password" => user.password,
+        "otp" => :pot.totp(user.tfa_otp_secret_key)
+      }
+
+      data = json_response(conn, 201)
+
+      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
+      assert user.id == data["id"]
+      assert user.tfa_otp_secret_key == data["tfa_otp_secret_key"]
+      refute old_tfa_otp_secret_key == data["tfa_otp_secret_key"]
     end
 
     test "cannot create new confirmation request if password is incorrect", %{conn: conn} do
@@ -36,7 +57,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       json_response(conn, 401)
     end
 
-    test "cannot activate tfa again", %{conn: conn} do
+    test "requires original otp before resetting", %{conn: conn} do
       user = insert(:user, tfa_enabled: true)
       conn = post conn, "/account/confirm/tfa", %{
         "email" => user.email,
@@ -47,46 +68,22 @@ defmodule Passport.TwoFactorAuthControllerTest do
     end
   end
 
-  describe "GET /account/confirm/tfa/:token" do
-    test "retrieves entity information for tfa confirmation", %{conn: conn} do
-      user = insert(:user)
-      {:ok, user} = Passport.prepare_tfa_confirmation(user)
-      conn = post conn, "/account/confirm/tfa/#{user.tfa_confirmation_token}", %{
-        "otp" => :pot.totp(user.tfa_otp_secret_key)
-      }
-
-      json_response(conn, 204)
-    end
-  end
-
-  describe "POST /account/confirm/tfa/:token" do
+  describe "PUT /account/confirm/tfa" do
     test "confirm tfa is valid", %{conn: conn} do
       user = insert(:user)
       {:ok, user} = Passport.prepare_tfa_confirmation(user)
-      conn = post conn, "/account/confirm/tfa/#{user.tfa_confirmation_token}", %{
+      conn = put conn, "/account/confirm/tfa", %{
+        "email" => user.email,
+        "password" => user.password,
         "otp" => :pot.totp(user.tfa_otp_secret_key)
       }
-      response(conn, 204)
+      data = json_response(conn, 200)
+      assert user.id == data["id"]
+      assert user.email == data["email"]
+      assert user.username == data["username"]
       user = Passport.Repo.replica().get(user.__struct__, user.id)
 
       assert user.tfa_enabled
-      assert user.tfa_confirmed_at
-      refute user.tfa_confirmation_token
-    end
-  end
-
-  describe "DELETE /account/confirm/tfa/:token" do
-    test "cancel a tfa confirmation request", %{conn: conn} do
-      user = insert(:user)
-      {:ok, user} = Passport.prepare_tfa_confirmation(user)
-      conn = delete conn, "/account/confirm/tfa/#{user.tfa_confirmation_token}"
-
-      response(conn, 204)
-      user = Passport.Repo.replica().get(user.__struct__, user.id)
-
-      refute user.tfa_enabled
-      refute user.tfa_confirmed_at
-      refute user.tfa_confirmation_token
     end
   end
 end

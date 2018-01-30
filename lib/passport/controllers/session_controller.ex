@@ -13,42 +13,9 @@ defmodule Passport.SessionController do
       * `password` - password of the user
       * `otp` - one-time passcode provided by the user
       """
-      def create(conn, %{"email" => e, "password" => p} = params) do
-        case Passport.Sessions.create(e, p, params["otp"]) do
-          {:ok, {token, user}} ->
-            {:ok, user} = Passport.on_successful_sign_in(user, conn.remote_ip)
-            conn
-            |> put_status(201)
-            |> render("show.json", data: user, token: token)
-
-          {:error, {:unauthorized_tfa, user}} ->
-            {:ok, _user} = Passport.track_tfa_attempts(user, conn.remote_ip)
-            Passport.APIHelper.send_unauthorized(conn, reason: "Invalid OTP code.")
-
-          {:error, {:unauthorized, user}} ->
-            {:ok, _user} = Passport.track_failed_attempts(user, conn.remote_ip)
-            Passport.APIHelper.send_unauthorized(conn, reason: "Invalid email or password.")
-
-          {:error, :unauthorized} ->
-            # unauthorized, but no user
-            Passport.APIHelper.send_unauthorized(conn, reason: "Invalid email or password.")
-
-          {:error, {:missing, :otp}} ->
-            conn
-            |> put_resp_header(Passport.Config.otp_header_name(), "required")
-            |> Passport.APIHelper.send_unauthorized(reason: "Missing otp code")
-
-          {:error, {:missing, attr}} ->
-            Passport.APIHelper.send_parameter_missing(conn, fields: [attr])
-
-          {:error, :locked} ->
-            Passport.APIHelper.send_locked(conn, reason: "Too many failed attempts.")
-
-          {:error, _} ->
-            Passport.APIHelper.send_forbidden(conn)
-        end
+      def create(conn, params) do
+        Passport.SessionController.create(__MODULE__, conn, params)
       end
-      # TODO: add catch-all create action, or just handle it in the above
 
       @doc """
       POST /logout
@@ -57,25 +24,66 @@ defmodule Passport.SessionController do
 
       Destroys the current session
       """
-      def delete(%{assigns: assigns} = conn, _params) do
-        case Passport.Sessions.destroy_session(assigns) do
-          {:ok, _session} ->
-            Passport.APIHelper.send_no_content(conn)
-
-          {:error, _} ->
-            Passport.APIHelper.send_server_error(conn)
-        end
+      def delete(conn, params) do
+        Passport.SessionController.delete(__MODULE__, conn, params)
       end
+    end
+  end
 
-      @doc """
-      POST /logout
-        Authorization: api.token
+  import Plug.Conn
+  import Phoenix.Controller
+  import Passport.APIHelper
 
-      Destroys the session regardless
-      """
-      def delete(conn, _params) do
-        Passport.APIHelper.send_no_content(conn)
-      end
+  def handle_session_error(controller, conn, err) do
+    case err do
+      {:error, {:unauthorized_tfa, user}} ->
+        {:ok, _user} = Passport.track_tfa_attempts(user, conn.remote_ip)
+        send_unauthorized(conn, reason: "Invalid OTP code.")
+
+      {:error, {:unauthorized, user}} ->
+        {:ok, _user} = Passport.track_failed_attempts(user, conn.remote_ip)
+        send_unauthorized(conn, reason: "Invalid email or password.")
+
+      {:error, :unauthorized} ->
+        # unauthorized, but no user
+        send_unauthorized(conn, reason: "Invalid email or password.")
+
+      {:error, {:missing, :otp}} ->
+        conn
+        |> put_resp_header(Passport.Config.otp_header_name(), "required")
+        |> send_unauthorized(reason: "Missing otp code")
+
+      {:error, {:missing, attr}} ->
+        send_parameter_missing(conn, fields: [attr])
+
+      {:error, :locked} ->
+        send_locked(conn, reason: "Too many failed attempts.")
+
+      {:error, _} ->
+        send_forbidden(conn)
+    end
+  end
+
+  def create(controller, conn, %{"email" => e, "password" => p} = params) do
+    case Passport.Sessions.create(e, p, params["otp"]) do
+      {:ok, {token, user}} ->
+        {:ok, user} = Passport.on_successful_sign_in(user, conn.remote_ip)
+        conn
+        |> put_status(201)
+        |> render("show.json", data: user, token: token)
+
+      {:error, _} = err ->
+        handle_session_error(controller, conn, err)
+    end
+  end
+
+  def delete(%{assigns: assigns} = controller, conn, params) do
+    case Passport.Sessions.destroy_session(assigns) do
+      {:ok, _session} ->
+        send_no_content(conn)
+
+      {:error, _} ->
+        send_server_error(conn)
     end
   end
 end
