@@ -37,6 +37,8 @@ defmodule Passport.TwoFactorAuthController do
       def delete(conn, params) do
         Passport.TwoFactorAuthController.delete(__MODULE__, conn, params)
       end
+
+      defoverridable [create: 2, show: 2, confirm: 2, delete: 2]
     end
   end
 
