@@ -27,6 +27,8 @@ defmodule Passport.SessionController do
       def delete(conn, params) do
         Passport.SessionController.delete(__MODULE__, conn, params)
       end
+
+      defoverridable [create: 2, delete: 2]
     end
   end
 
