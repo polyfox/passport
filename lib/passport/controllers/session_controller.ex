@@ -80,7 +80,13 @@ defmodule Passport.SessionController do
       {:error, :locked} ->
         send_locked(conn, reason: "Too many failed attempts.")
 
-      {:error, {:force_tfa_setup, entity}} ->
+      {:error, {:missing_tfa_otp_secret_key, entity}} ->
+        conn
+        # Precondition required
+        |> put_resp_header(Passport.Config.otp_header_name(), "required")
+        |> send_precondition_required(reason: "2FA setup required.")
+
+      {:error, {:force_tfa_setup, _entity}} ->
         conn
         # Precondition required
         |> put_resp_header(Passport.Config.otp_header_name(), "required")

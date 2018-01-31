@@ -95,7 +95,11 @@ defmodule Passport.Sessions do
     |> case do
       {:ok, entity} ->
         if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
-          TwoFactorAuth.check_totp(entity, otp)
+          if entity.tfa_otp_secret_key do
+            TwoFactorAuth.check_totp(entity, otp)
+          else
+            {:error, {:missing_tfa_otp_secret_key, entity}}
+          end
         else
           {:ok, true}
         end

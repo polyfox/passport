@@ -61,6 +61,16 @@ defmodule Passport.SessionControllerTest do
         %{"code" => "locked", "detail" => "Too many failed attempts.", "status" => "423", "title" => "Locked"}
       ] == data["errors"]
     end
+
+    test "will error if entity has tfa enabled, but no secret key", %{conn: conn} do
+      user = insert(:user, tfa_enabled: true, tfa_otp_secret_key: nil)
+      conn = post conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password
+      }
+
+      data = json_response(conn, 428)
+    end
   end
 
   describe "DELETE /account/login" do
