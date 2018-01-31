@@ -65,7 +65,6 @@ defmodule Passport.TwoFactorAuth do
   def prepare_tfa_confirmation(changeset) do
     changeset
     |> put_change(:tfa_otp_secret_key, nil)
-    |> put_change(:tfa_enabled, false)
     |> patch_tfa_otp_secret_key()
   end
 
