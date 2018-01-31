@@ -4,14 +4,14 @@ defmodule Passport.TwoFactorAuthController do
       require Passport.Config
 
       @doc """
-      POST /account/confirm/tfa
+      POST /account/reset/tfa
       """
       def create(conn, params) do
         Passport.TwoFactorAuthController.create(__MODULE__, conn, params)
       end
 
       @doc """
-      PUT /account/confirm/tfa
+      POST /account/confirm/tfa
       """
       def confirm(conn, params) do
         Passport.TwoFactorAuthController.confirm(__MODULE__, conn, params)

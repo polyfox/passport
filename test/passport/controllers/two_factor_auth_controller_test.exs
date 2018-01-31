@@ -1,12 +1,12 @@
 defmodule Passport.TwoFactorAuthControllerTest do
   use Passport.Support.Web.ConnCase
 
-  describe "POST /account/confirm/tfa" do
+  describe "POST /account/reset/tfa" do
     test "can reset tfa_otp_secret_key", %{conn: conn} do
       user = insert(:user)
       old_tfa_otp_secret_key = user.tfa_otp_secret_key
       assert old_tfa_otp_secret_key
-      conn = post conn, "/account/confirm/tfa", %{
+      conn = post conn, "/account/reset/tfa", %{
         "email" => user.email,
         "password" => user.password
       }
@@ -23,7 +23,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       user = insert(:user, tfa_enabled: true)
       old_tfa_otp_secret_key = user.tfa_otp_secret_key
       assert old_tfa_otp_secret_key
-      conn = post conn, "/account/confirm/tfa", %{
+      conn = post conn, "/account/reset/tfa", %{
         "email" => user.email,
         "password" => user.password,
         "otp" => :pot.totp(user.tfa_otp_secret_key)
@@ -37,7 +37,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       refute old_tfa_otp_secret_key == data["tfa_otp_secret_key"]
     end
 
-    test "cannot create new confirmation request if password is incorrect", %{conn: conn} do
+    test "cannot reset if password is incorrect", %{conn: conn} do
       user = insert(:user)
       conn = post conn, "/account/confirm/tfa", %{
         "email" => user.email,
@@ -47,7 +47,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       json_response(conn, 401)
     end
 
-    test "cannot create new confirmation request if email is incorrect", %{conn: conn} do
+    test "cannot reset if email is incorrect", %{conn: conn} do
       user = insert(:user)
       conn = post conn, "/account/confirm/tfa", %{
         "email" => "somedude@example.com",
@@ -59,7 +59,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
 
     test "requires original otp before resetting", %{conn: conn} do
       user = insert(:user, tfa_enabled: true)
-      conn = post conn, "/account/confirm/tfa", %{
+      conn = post conn, "/account/reset/tfa", %{
         "email" => user.email,
         "password" => user.password
       }
@@ -68,11 +68,11 @@ defmodule Passport.TwoFactorAuthControllerTest do
     end
   end
 
-  describe "PUT /account/confirm/tfa" do
+  describe "POST /account/confirm/tfa" do
     test "confirm tfa is valid", %{conn: conn} do
       user = insert(:user)
       {:ok, user} = Passport.prepare_tfa_confirmation(user)
-      conn = put conn, "/account/confirm/tfa", %{
+      conn = post conn, "/account/confirm/tfa", %{
         "email" => user.email,
         "password" => user.password,
         "otp" => :pot.totp(user.tfa_otp_secret_key)
