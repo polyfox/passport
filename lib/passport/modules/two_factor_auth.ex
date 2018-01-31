@@ -13,8 +13,8 @@ defmodule Passport.TwoFactorAuth do
   defmacro routes(opts \\ []) do
     two_factor_auth_controller = Keyword.get(opts, :two_factor_auth_controller, TwoFactorAuthController)
     quote do
-      post "/confirm/tfa", unquote(two_factor_auth_controller), :create
-      put "/confirm/tfa", unquote(two_factor_auth_controller), :confirm
+      post "/reset/tfa", unquote(two_factor_auth_controller), :create
+      post "/confirm/tfa", unquote(two_factor_auth_controller), :confirm
     end
   end
 
