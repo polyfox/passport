@@ -85,7 +85,7 @@ defmodule Passport.SessionController do
     end
   end
 
-  def delete(%{assigns: assigns} = controller, conn, params) do
+  def delete(controller, %{assigns: assigns} = conn, params) do
     case Passport.Sessions.destroy_session(assigns) do
       {:ok, _session} ->
         send_no_content(conn)
