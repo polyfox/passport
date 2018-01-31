@@ -110,23 +110,31 @@ defmodule Passport.Sessions do
   end
 
   @doc """
+  Creates a new session from the given entity.
+  """
+  @spec create_session(term) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  def create_session(entity) do
+    sessions_client = Config.sessions_client()
+    sessions_client.create_session(entity)
+  end
+
+  @doc """
   Creates a new session and returns a corresponding token to identify it
 
   Args:
   * `identity` - a unique value such as a username or email to identify the entity
   * `password` - a password of some kind
   """
-  @spec create(identity :: String.t, password :: String.t, otp :: String.t) :: {:ok, {token :: String.t, user :: term}} | {:error, term}
-  def create(identity, password, otp \\ nil)
-  def create(nil, _password, _otp), do: {:error, {:missing, :identity}}
-  def create(_identity, nil, _otp), do: {:error, {:missing, :password}}
-  def create(identity, password, otp) do
+  @spec authenticate_session(identity :: String.t, password :: String.t, otp :: String.t) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  def authenticate_session(identity, password, otp \\ nil)
+  def authenticate_session(nil, _password, _otp), do: {:error, {:missing, :identity}}
+  def authenticate_session(_identity, nil, _otp), do: {:error, {:missing, :password}}
+  def authenticate_session(identity, password, otp) do
     # ident = identity/username, auth = password
-    sessions_client = Config.sessions_client()
     identity
     |> authenticate_entity(password, otp)
     |> case do
-      {:ok, entity} -> sessions_client.create_session(entity)
+      {:ok, entity} -> create_session(entity)
       {:error, _} = err -> err
     end
   end

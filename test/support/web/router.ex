@@ -34,7 +34,7 @@ defmodule Passport.Support.Web.Router do
     get "/protected_content", PageController, :protected_content
 
     scope "/account" do
-      #Passport.routes([:authenticatable])
+      Passport.routes([:authenticatable], protected: true)
     end
   end
 end

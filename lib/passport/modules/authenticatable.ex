@@ -18,8 +18,15 @@ defmodule Passport.Authenticatable do
 
   defmacro routes(opts \\ []) do
     authenticatable_controller = Keyword.get(opts, :authenticatable_controller, SessionController)
-    quote do
-      post "/login", unquote(authenticatable_controller), :create
+    if opts[:protected] do
+      quote do
+        delete "/login", unquote(authenticatable_controller), :delete
+        post "/logout", unquote(authenticatable_controller), :delete
+      end
+    else
+      quote do
+        post "/login", unquote(authenticatable_controller), :create
+      end
     end
   end
 

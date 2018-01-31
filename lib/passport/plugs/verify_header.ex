@@ -37,6 +37,7 @@ defmodule Passport.Plug.VerifyHeader do
       # Authorization: <jwt>
   """
   alias Passport.Config
+  import Passport.APIHelper
 
   def init(opts \\ %{}) do
     opts_map = Enum.into(opts, %{})
@@ -54,17 +55,17 @@ defmodule Passport.Plug.VerifyHeader do
   end
 
   # TODO: maybe move the send into call, and check if token is set
-  defp verify_token(conn, nil, _), do: send_unauthenticated_response(conn)
-  defp verify_token(conn, "", _), do: send_unauthenticated_response(conn)
+  defp verify_token(conn, nil, _), do: send_unauthenticated(conn)
+  defp verify_token(conn, "", _), do: send_unauthenticated(conn)
 
   defp verify_token(conn, token, opts) do
     case Passport.Sessions.get_session(token) do
       {:ok, claims} ->
         set_current_claims(conn, claims)
       {:error, :locked} ->
-        send_locked_response(conn)
+        send_locked(conn)
       {:error, reason} ->
-        send_unauthorized_response(conn)
+        send_unauthorized(conn)
     end
   end
 
@@ -84,18 +85,6 @@ defmodule Passport.Plug.VerifyHeader do
   end
 
   defp fetch_token(_, _, [token|_tail]), do: String.trim(token)
-
-  defp send_locked_response(conn) do
-    Passport.APIHelper.send_locked(conn)
-  end
-
-  defp send_unauthorized_response(conn) do
-    Passport.APIHelper.send_unauthorized(conn)
-  end
-
-  defp send_unauthenticated_response(conn) do
-    Passport.APIHelper.send_unauthenticated(conn)
-  end
 
   defp set_current_claims(conn, claims) do
     Enum.reduce(claims, conn, fn {k, v}, c ->
