@@ -54,6 +54,11 @@ defmodule Passport.APIHelper do
     send_error(conn, 423, "locked.json", assigns)
   end
 
+  # 428
+  def send_precondition_required(conn, assigns) do
+    send_error(conn, 428, "precondition_required.json", assigns)
+  end
+
   # 500
   def send_server_error(conn, assigns \\ []) do
     send_error(conn, 500, "500.json", assigns)
