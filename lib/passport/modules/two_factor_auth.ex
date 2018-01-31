@@ -30,6 +30,7 @@ defmodule Passport.TwoFactorAuth do
   def migration_indices(_mod) do
     # <users> will be replaced with the correct table name
     [
+      ~s{create unique_index(<users>, [:tfa_otp_secret_key], where: "tfa_otp_secret_key IS NOT NULL")}
     ]
   end
 
@@ -71,7 +72,6 @@ defmodule Passport.TwoFactorAuth do
   def changeset(record, params) do
     record
     |> cast(params, [:tfa_enabled])
-    |> patch_tfa_otp_secret_key()
     |> unique_constraint(:tfa_otp_secret_key)
   end
 
