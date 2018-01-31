@@ -5,6 +5,12 @@ defmodule Passport.SessionController do
     quote location: :keep do
       require Passport.Config
 
+      def handle_session_error(conn, err) do
+        Passport.SessionController.handle_session_error(__MODULE__, conn, err)
+      end
+
+      defoverridable [handle_session_error: 2]
+
       @doc """
       POST /login
 
@@ -75,7 +81,7 @@ defmodule Passport.SessionController do
         |> render("show.json", data: user, token: token)
 
       {:error, _} = err ->
-        handle_session_error(controller, conn, err)
+        controller.handle_session_error(conn, err)
     end
   end
 
