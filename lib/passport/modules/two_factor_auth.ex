@@ -10,8 +10,11 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
-  defmacro routes(_opts \\ []) do
+  defmacro routes(opts \\ []) do
+    two_factor_auth_controller = Keyword.get(opts, :two_factor_auth_controller, TwoFactorAuthController)
     quote do
+      post "/reset/tfa", unquote(two_factor_auth_controller), :create
+      post "/confirm/tfa", unquote(two_factor_auth_controller), :confirm
     end
   end
 
@@ -27,7 +30,7 @@ defmodule Passport.TwoFactorAuth do
   def migration_indices(_mod) do
     # <users> will be replaced with the correct table name
     [
-      "create unique_index(<users>, [:tfa_otp_secret_key])"
+      ~s{create unique_index(<users>, [:tfa_otp_secret_key], where: "tfa_otp_secret_key IS NOT NULL")}
     ]
   end
 
@@ -46,26 +49,45 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
+  @doc """
+  Confirm that TFA should be enabled for the provided entity.
+  """
+  @spec confirm_tfa(Ecto.Changeset.t) :: Ecto.Changeset.t
+  def confirm_tfa(changeset) do
+    changeset
+    |> put_change(:tfa_enabled, true)
+  end
+
+  @doc """
+  Initializes a new otp secret key for the specified account.
+  """
+  @spec prepare_tfa_confirmation(Ecto.Changeset.t | atom) :: Ecto.Changeset.t
+  def prepare_tfa_confirmation(changeset) do
+    changeset
+    |> put_change(:tfa_otp_secret_key, nil)
+    |> patch_tfa_otp_secret_key()
+  end
+
   def changeset(record, params) do
     record
     |> cast(params, [:tfa_enabled])
-    |> patch_tfa_otp_secret_key()
     |> unique_constraint(:tfa_otp_secret_key)
   end
 
   @doc """
   Check the totp regardless of if tfa_enabled state
   """
-  def abs_check_totp(record, totp) do
-    secret = record.tfa_otp_secret_key
-    :pot.valid_totp(totp, secret, window: 1, addWindow: 1)
-  end
-
-  @spec check_totp(record :: term, totp :: String.t) :: boolean | {:error, term}
-  def check_totp(_record, nil) do
+  @spec abs_check_totp(term, String.t) :: {:ok, boolean} | {:error, term}
+  def abs_check_totp(record, nil) do
     {:error, {:missing, :otp}}
   end
 
+  def abs_check_totp(record, totp) do
+    secret = record.tfa_otp_secret_key
+    {:ok, :pot.valid_totp(totp, secret, window: 1, addWindow: 1)}
+  end
+
+  @spec check_totp(term, String.t | nil) :: {:ok, boolean} | {:error, term}
   def check_totp(%{tfa_enabled: true} = record, totp) do
     abs_check_totp(record, totp)
   end

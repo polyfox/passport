@@ -86,6 +86,47 @@ defmodule Passport.Sessions do
     sessions_client.find_entity_by_identity(identity)
   end
 
+  def basic_authenticate_entity(identity, password) do
+    sessions_client = Config.sessions_client()
+    identity
+    |> find_entity_by_identity()
+    |> sessions_client.check_authentication(password)
+  end
+
+  @spec authenticate_entity(String.t, String.t, String.t) :: {:ok, term} | {:error, term}
+  def authenticate_entity(identity, password, otp \\ nil) do
+    identity
+    |> basic_authenticate_entity(password)
+    |> case do
+      {:ok, entity} ->
+        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
+          if entity.tfa_otp_secret_key do
+            TwoFactorAuth.check_totp(entity, otp)
+          else
+            {:error, {:missing_tfa_otp_secret_key, entity}}
+          end
+        else
+          {:ok, true}
+        end
+        |> case do
+          {:error, _} = err -> err
+          {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
+          {:ok, true} -> {:ok, entity}
+        end
+
+      {:error, _} = err -> err
+    end
+  end
+
+  @doc """
+  Creates a new session from the given entity.
+  """
+  @spec create_session(term) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  def create_session(entity) do
+    sessions_client = Config.sessions_client()
+    sessions_client.create_session(entity)
+  end
+
   @doc """
   Creates a new session and returns a corresponding token to identify it
 
@@ -93,31 +134,16 @@ defmodule Passport.Sessions do
   * `identity` - a unique value such as a username or email to identify the entity
   * `password` - a password of some kind
   """
-  @spec create(identity :: String.t, password :: String.t, otp :: String.t) :: {:ok, {token :: String.t, user :: term}} | {:error, term}
-  def create(identity, password, otp \\ nil)
-  def create(nil, _password, _otp), do: {:error, {:missing, :identity}}
-  def create(_identity, nil, _otp), do: {:error, {:missing, :password}}
-  def create(identity, password, otp) do
+  @spec authenticate_session(identity :: String.t, password :: String.t, otp :: String.t) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  def authenticate_session(identity, password, otp \\ nil)
+  def authenticate_session(nil, _password, _otp), do: {:error, {:missing, :identity}}
+  def authenticate_session(_identity, nil, _otp), do: {:error, {:missing, :password}}
+  def authenticate_session(identity, password, otp) do
     # ident = identity/username, auth = password
-    sessions_client = Config.sessions_client()
     identity
-    |> find_entity_by_identity()
-    |> sessions_client.check_authentication(password)
+    |> authenticate_entity(password, otp)
     |> case do
-      {:ok, entity} ->
-        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
-          case TwoFactorAuth.check_totp(entity, otp) do
-            {:error, :tfa_disabled} -> true
-            other -> other
-          end
-        else
-          true
-        end
-        |> case do
-          {:error, _} = err -> err
-          false -> {:error, {:unauthorized_tfa, entity}}
-          true -> sessions_client.create_session(entity)
-        end
+      {:ok, entity} -> create_session(entity)
       {:error, _} = err -> err
     end
   end

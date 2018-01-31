@@ -1,13 +1,21 @@
 defmodule Passport.Support.Web.ErrorView do
   use Passport.Support.Web, :view
 
+  def render("unauthorized.json", assigns) do
+    %{errors: [%{status: "401", code: "unauthorized", title: "Unauthorized", detail: assigns[:reason]}]}
+  end
+
+  def render("unauthenticated.json", assigns) do
+    %{errors: [%{status: "401", code: "unauthenticated", title: "Unauthenticated", detail: assigns[:reason]}]}
+  end
+
   def render("parameter_missing.json", assigns) do
     %{
       errors: Enum.map(assigns[:fields], fn field ->
         %{
           status: "422",
           code: "parameter_missing",
-          title: "parameter missing",
+          title: "Parameter Missing",
           source: %{
             parameter: "/#{field}"
           }
@@ -16,16 +24,12 @@ defmodule Passport.Support.Web.ErrorView do
     }
   end
 
-  def render("locked.json", _assigns) do
-    %{}
+  def render("locked.json", assigns) do
+    %{errors: [%{status: "423", code: "locked", title: "Locked", detail: assigns[:reason]}]}
   end
 
-  def render("unauthorized.json", _assigns) do
-    %{}
-  end
-
-  def render("unauthenticated.json", _assigns) do
-    %{}
+  def render("precondition_required.json", assigns) do
+    %{errors: [%{status: "428", code: "precondition_required", title: "Precondition Required", detail: assigns[:reason]}]}
   end
 
   def render("404.html", _assigns) do

@@ -35,6 +35,11 @@ defmodule Passport.APIHelper do
     send_error(conn, 404, "404.json", assigns)
   end
 
+  # 409
+  def send_conflict(conn, assigns \\ []) do
+    send_error(conn, 409, "conflict.json", assigns)
+  end
+
   # 422
   def send_parameter_missing(conn, assigns \\ []) do
     send_error(conn, 422, "parameter_missing.json", assigns)
@@ -47,6 +52,11 @@ defmodule Passport.APIHelper do
   # 423
   def send_locked(conn, assigns \\ []) do
     send_error(conn, 423, "locked.json", assigns)
+  end
+
+  # 428
+  def send_precondition_required(conn, assigns) do
+    send_error(conn, 428, "precondition_required.json", assigns)
   end
 
   # 500

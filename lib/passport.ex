@@ -108,6 +108,37 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
+  def confirm_tfa(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.confirm_tfa()
+    |> Repo.primary().update()
+  end
+
+  def entity_activated?(entity) do
+    if Config.features?(entity, :activatable) do
+      entity.active
+    else
+      true
+    end
+  end
+
+  def entity_confirmed?(entity) do
+    if Config.features?(entity, :confirmable) do
+      !!entity.confirmed_at
+    else
+      true
+    end
+  end
+
+  def entity_locked?(entity) do
+    if Config.features?(entity, :lockable) do
+      !!entity.locked_at
+    else
+      false
+    end
+  end
+
   @spec track_failed_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
   def track_failed_attempts(entity, remote_ip) do
     entity
@@ -128,6 +159,14 @@ defmodule Passport do
     # entity has not changed and will not execute the update,
     # force: true, here ensures that the prepare_changes is ran
     |> Repo.primary().update(force: true)
+  end
+
+  @spec prepare_tfa_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def prepare_tfa_confirmation(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.prepare_tfa_confirmation()
+    |> Repo.primary().update()
   end
 
   @spec prepare_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
@@ -272,30 +311,6 @@ defmodule Passport do
       changeset
     end
     Repo.primary().update(changeset)
-  end
-
-  def entity_activated?(entity) do
-    if Config.features?(entity, :activatable) do
-      entity.active
-    else
-      true
-    end
-  end
-
-  def entity_confirmed?(entity) do
-    if Config.features?(entity, :confirmable) do
-      !!entity.confirmed_at
-    else
-      true
-    end
-  end
-
-  def entity_locked?(entity) do
-    if Config.features?(entity, :lockable) do
-      !!entity.locked_at
-    else
-      false
-    end
   end
 
   @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}

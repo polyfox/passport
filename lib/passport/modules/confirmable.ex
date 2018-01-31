@@ -50,10 +50,15 @@ defmodule Passport.Confirmable do
     |> put_change(:confirmed_at, DateTime.utc_now())
   end
 
-  def prepare_confirmation(changeset) do
+  def new_confirmation(changeset) do
     changeset
     |> put_change(:confirmation_token, generate_confirmation_token())
     |> put_change(:confirmation_sent_at, DateTime.utc_now())
+  end
+
+  def prepare_confirmation(changeset) do
+    changeset
+    |> new_confirmation()
     |> put_change(:confirmed_at, nil)
   end
 
