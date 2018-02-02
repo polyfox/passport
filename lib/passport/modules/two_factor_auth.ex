@@ -83,8 +83,10 @@ defmodule Passport.TwoFactorAuth do
   end
 
   def abs_check_totp(record, totp) do
-    secret = record.tfa_otp_secret_key
-    {:ok, :pot.valid_totp(totp, secret, window: 1, addWindow: 1)}
+    case record.tfa_otp_secret_key do
+      nil -> {:error, {:missing, :tfa_otp_secret_key}}
+      secret -> {:ok, :pot.valid_totp(totp, secret, window: 1, addWindow: 1)}
+    end
   end
 
   @spec check_totp(term, String.t | nil) :: {:ok, boolean} | {:error, term}
