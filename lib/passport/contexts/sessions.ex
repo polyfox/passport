@@ -93,27 +93,35 @@ defmodule Passport.Sessions do
     |> sessions_client.check_authentication(password)
   end
 
+  def check_auth_code(entity, auth_code) do
+    if entity.tfa_otp_secret_key do
+      case auth_code do
+        {:otp, otp} ->
+          case TwoFactorAuth.check_totp(entity, otp) do
+            {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
+            {:ok, true} -> {:ok, entity}
+          end
+        {:rtok, token} ->
+          TwoFactorAuth.consume_recovery_token(entity, token)
+        _ ->
+          {:error, {:missing_auth_code, entity}}
+      end
+    else
+      {:error, {:missing_tfa_otp_secret_key, entity}}
+    end
+  end
+
   @spec authenticate_entity(String.t, String.t, String.t) :: {:ok, term} | {:error, term}
-  def authenticate_entity(identity, password, otp \\ nil) do
+  def authenticate_entity(identity, password, code \\ nil) do
     identity
     |> basic_authenticate_entity(password)
     |> case do
       {:ok, entity} ->
         if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
-          if entity.tfa_otp_secret_key do
-            TwoFactorAuth.check_totp(entity, otp)
-          else
-            {:error, {:missing_tfa_otp_secret_key, entity}}
-          end
+          check_auth_code(entity, code)
         else
-          {:ok, true}
+          {:ok, entity}
         end
-        |> case do
-          {:error, _} = err -> err
-          {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
-          {:ok, true} -> {:ok, entity}
-        end
-
       {:error, _} = err -> err
     end
   end

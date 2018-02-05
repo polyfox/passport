@@ -2,7 +2,7 @@ defmodule Passport.SessionControllerTest do
   use Passport.Support.Web.ConnCase
 
   describe "POST /account/login" do
-    test "creates a new session", %{conn: conn} do
+    test "creates a new session with basic auth", %{conn: conn} do
       user = insert(:user)
       conn = post conn, "/account/login", %{
         "email" => user.email,
@@ -16,6 +16,49 @@ defmodule Passport.SessionControllerTest do
       assert user.id == data["data"]["id"]
       assert user.email == data["data"]["email"]
       assert user.username == data["data"]["username"]
+    end
+
+    test "creates a new session with tfa enabled, using otp", %{conn: base_conn} do
+      user = insert(:user)
+      {:ok, user} = Passport.confirm_tfa(user)
+      conn = post base_conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password
+      }
+
+      assert json_response(conn, 401)
+
+      conn = post base_conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password,
+        "otp" => :pot.totp(user.tfa_otp_secret_key)
+      }
+
+      data = json_response(conn, 201)
+    end
+
+    test "creates a new session with tfa enabled, using rtok", %{conn: base_conn} do
+      user = insert(:user)
+      {:ok, user} = Passport.confirm_tfa(user)
+      conn = post base_conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password
+      }
+
+      assert json_response(conn, 401)
+
+      [token | rest] = user.tfa_recovery_tokens
+      conn = post base_conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password,
+        "rtok" => token
+      }
+
+      data = json_response(conn, 201)
+
+      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
+
+      assert rest == user.tfa_recovery_tokens
     end
 
     test "cannot create new session if email is incorrect", %{conn: conn} do

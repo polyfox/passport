@@ -17,6 +17,7 @@ defmodule Passport do
   import Ecto.Changeset
 
   @type params :: map
+  @type entity :: term
 
   @feature_map %{
     activatable: Activatable,
@@ -108,6 +109,7 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
+  @spec confirm_tfa(entity) :: {:ok, entity} | {:error, term}
   def confirm_tfa(entity) do
     entity
     |> change()

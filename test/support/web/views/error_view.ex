@@ -9,6 +9,10 @@ defmodule Passport.Support.Web.ErrorView do
     %{errors: [%{status: "401", code: "unauthenticated", title: "Unauthenticated", detail: assigns[:reason]}]}
   end
 
+  def render("403.json", assigns) do
+    %{errors: [%{status: "403", code: "forbidden", title: "Forbidden", detail: assigns[:reason]}]}
+  end
+
   def render("parameter_missing.json", assigns) do
     %{
       errors: Enum.map(assigns[:fields], fn field ->

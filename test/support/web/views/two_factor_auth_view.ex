@@ -6,6 +6,6 @@ defmodule Passport.Support.Web.TwoFactorAuthView do
   end
 
   def render("confirm.json", assigns) do
-    Map.take(assigns[:data], [:id, :email, :username])
+    Map.take(assigns[:data], [:id, :email, :username, :tfa_recovery_tokens])
   end
 end

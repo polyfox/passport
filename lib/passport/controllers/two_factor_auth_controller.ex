@@ -24,6 +24,7 @@ defmodule Passport.TwoFactorAuthController do
   import Plug.Conn
   import Phoenix.Controller
   import Passport.APIHelper
+  import Passport.SessionController, only: [determine_auth_code: 1, handle_session_error: 3]
 
   defp do_create(conn, entity) do
     case Passport.prepare_tfa_confirmation(entity) do
@@ -38,33 +39,25 @@ defmodule Passport.TwoFactorAuthController do
   end
 
   def create(controller, conn, params) do
-    case Passport.Sessions.authenticate_entity(params["email"], params["password"], params["otp"]) do
-      {:error, {:missing_tfa_otp_secret_key, entity}} -> do_create(conn, entity)
+    case Passport.Sessions.authenticate_entity(params["email"], params["password"], determine_auth_code(params)) do
       {:ok, entity} -> do_create(conn, entity)
+      {:error, {:missing_tfa_otp_secret_key, entity}} -> do_create(conn, entity)
       {:error, _} = err ->
-        Passport.SessionController.handle_session_error(controller, conn, err)
+        handle_session_error(controller, conn, err)
     end
   end
 
   def confirm(controller, conn, params) do
-    # TFA is disabled at this point, by confirming that the otp provided this will then enable or re-enable it.
-    case Passport.Sessions.basic_authenticate_entity(params["email"], params["password"]) do
+    case Passport.Sessions.authenticate_entity(params["email"], params["password"], {:otp, params["otp"]}) do
       {:ok, entity} ->
-        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
-          {:ok, false} ->
-            send_unauthorized(conn, reason: "otp mismatch")
-          {:ok, true} ->
-            case Passport.confirm_tfa(entity) do
-              {:ok, entity} ->
-                render(conn, "confirm.json", data: entity)
-              {:error, %Ecto.Changeset{} = changeset} ->
-                send_changeset_error(conn, changeset: changeset)
-            end
-          {:error, _} ->
-            send_parameter_missing(conn, field: :otp, reason: "otp code required")
+        case Passport.confirm_tfa(entity) do
+          {:ok, entity} ->
+            render(conn, "confirm.json", data: entity)
+          {:error, %Ecto.Changeset{} = changeset} ->
+            send_changeset_error(conn, changeset: changeset)
         end
       {:error, _} = err ->
-        Passport.SessionController.handle_session_error(controller, conn, err)
+        handle_session_error(controller, conn, err)
     end
   end
 end

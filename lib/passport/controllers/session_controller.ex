@@ -1,3 +1,6 @@
+require Logger
+require Passport.Repo
+
 defmodule Passport.SessionController do
   @moduledoc """
   """
@@ -57,6 +60,10 @@ defmodule Passport.SessionController do
 
   def handle_session_error(controller, conn, err) do
     case err do
+      {:error, {:missing_auth_code, entity}} ->
+        {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
+        send_unauthorized(conn, reason: "Invalid Auth code.")
+
       {:error, {:unauthorized_tfa, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
         send_unauthorized(conn, reason: "Invalid OTP code.")
@@ -94,7 +101,8 @@ defmodule Passport.SessionController do
         |> put_resp_header(Passport.Config.otp_header_name(), "required")
         |> send_precondition_required(reason: "2FA setup required.")
 
-      {:error, _} ->
+      {:error, reason} ->
+        Logger.error "unexpected error #{inspect(reason)}"
         send_forbidden(conn)
     end
   end
@@ -107,8 +115,20 @@ defmodule Passport.SessionController do
     end
   end
 
+  def determine_auth_code(params) do
+    cond do
+      params["otp"] -> {:otp, params["otp"]}
+      params["rtok"] -> {:rtok, params["rtok"]}
+      true -> nil
+    end
+  end
+
+  def commit_entity_changes(%Ecto.Changeset{} = cs), do: Passport.Repo.primary().update(cs)
+  def commit_entity_changes(entity), do: {:ok, entity}
+
   def create(controller, conn, params) do
-    with {:ok, entity} <- Passport.Sessions.authenticate_entity(params["email"], params["password"], params["otp"]),
+    with {:ok, entity} <- Passport.Sessions.authenticate_entity(params["email"], params["password"], determine_auth_code(params)),
+         {:ok, entity} <- commit_entity_changes(entity),
          {:ok, {token, entity}} <- try_create_session(controller, conn, entity),
          {:ok, entity} <- Passport.on_successful_sign_in(entity, conn.remote_ip) do
       conn
