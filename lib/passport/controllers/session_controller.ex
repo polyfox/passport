@@ -77,8 +77,10 @@ defmodule Passport.SessionController do
       {:error, {:missing, attr}} ->
         send_parameter_missing(conn, fields: [attr])
 
-      {:error, :locked} ->
-        send_locked(conn, reason: "Too many failed attempts.")
+      {:error, {:locked, entity}} ->
+        conn
+        |> put_resp_header("x-locked-at", DateTime.to_string(entity.locked_at))
+        |> send_locked(reason: "Too many failed attempts.")
 
       {:error, {:missing_tfa_otp_secret_key, entity}} ->
         conn

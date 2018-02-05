@@ -320,7 +320,7 @@ defmodule Passport do
         cond do
           not entity_activated?(entity) -> {:error, :inactive}
           not entity_confirmed?(entity) -> {:error, :unconfirmed}
-          entity_locked?(entity) -> {:error, :locked}
+          entity_locked?(entity) -> {:error, {:locked, entity}}
           true -> {:ok, entity}
         end
 
