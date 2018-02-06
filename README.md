@@ -158,7 +158,8 @@ __Confirm TFA__
 ### Schema
 
 ```bash
-$ mix passport.init
+#$ mix passport.init ModelName table_name
+$ mix passport.init User users
 ```
 
 ### Models
