@@ -50,11 +50,20 @@ defmodule Passport.TwoFactorAuthController do
   def confirm(controller, conn, params) do
     case Passport.Sessions.authenticate_entity(params["email"], params["password"], {:otp, params["otp"]}) do
       {:ok, entity} ->
-        case Passport.confirm_tfa(entity) do
-          {:ok, entity} ->
-            render(conn, "confirm.json", data: entity)
-          {:error, %Ecto.Changeset{} = changeset} ->
-            send_changeset_error(conn, changeset: changeset)
+        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
+          {:ok, true} ->
+            case Passport.confirm_tfa(entity) do
+              {:ok, entity} ->
+                render(conn, "confirm.json", data: entity)
+              {:error, %Ecto.Changeset{} = changeset} ->
+                send_changeset_error(conn, changeset: changeset)
+            end
+
+          {:ok, false} ->
+            send_unauthorized(conn, reason: "incorrect otp code")
+
+          {:error, _} = err ->
+            handle_session_error(controller, conn, err)
         end
       {:error, _} = err ->
         handle_session_error(controller, conn, err)
