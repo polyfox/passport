@@ -147,7 +147,7 @@ defmodule Passport.TwoFactorAuth do
         |> put_change(:tfa_recovery_tokens, List.delete(entity.tfa_recovery_tokens, token))
       {:ok, changeset}
     else
-      {:error, {:token_not_found, entity}}
+      {:error, {:recovery_token_not_found, entity}}
     end
   end
 

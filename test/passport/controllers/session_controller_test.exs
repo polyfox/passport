@@ -61,6 +61,23 @@ defmodule Passport.SessionControllerTest do
       assert rest == user.tfa_recovery_tokens
     end
 
+    test "fails to create new session with tfa enabled, using incorrect rtok", %{conn: base_conn} do
+      user = insert(:user)
+      {:ok, user} = Passport.confirm_tfa(user)
+      old_tokens = user.tfa_recovery_tokens
+      conn = post base_conn, "/account/login", %{
+        "email" => user.email,
+        "password" => user.password,
+        "rtok" => "00000000"
+      }
+
+      assert json_response(conn, 401)
+
+      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
+
+      assert old_tokens == user.tfa_recovery_tokens
+    end
+
     test "cannot create new session if email is incorrect", %{conn: conn} do
       user = insert(:user)
       conn = post conn, "/account/login", %{

@@ -60,6 +60,10 @@ defmodule Passport.SessionController do
 
   def handle_session_error(controller, conn, err) do
     case err do
+      {:error, {:recovery_token_not_found, entity}} ->
+        {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
+        send_unauthorized(conn, reason: "Invalid Recovery Token.")
+
       {:error, {:missing_auth_code, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
         send_unauthorized(conn, reason: "Invalid Auth code.")
