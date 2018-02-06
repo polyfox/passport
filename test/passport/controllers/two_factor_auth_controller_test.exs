@@ -37,7 +37,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       refute old_tfa_otp_secret_key == data["tfa_otp_secret_key"]
     end
 
-    test "can reset tfa_otp_secret_key with tfa enabled and rtok provided", %{conn: conn} do
+    test "can reset tfa_otp_secret_key with tfa enabled and recovery_token provided", %{conn: conn} do
       user = insert(:user)
       {:ok, user} = Passport.confirm_tfa(user)
 
@@ -48,7 +48,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
       conn = post conn, "/account/reset/tfa", %{
         "email" => user.email,
         "password" => user.password,
-        "rtok" => token
+        "recovery_token" => token
       }
 
       data = json_response(conn, 201)

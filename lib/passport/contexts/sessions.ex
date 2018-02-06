@@ -101,7 +101,7 @@ defmodule Passport.Sessions do
             {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
             {:ok, true} -> {:ok, entity}
           end
-        {:rtok, token} ->
+        {:recovery_token, token} ->
           TwoFactorAuth.consume_recovery_token(entity, token)
         _ ->
           {:error, {:missing_auth_code, entity}}

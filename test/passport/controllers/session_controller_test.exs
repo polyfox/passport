@@ -37,7 +37,7 @@ defmodule Passport.SessionControllerTest do
       data = json_response(conn, 201)
     end
 
-    test "creates a new session with tfa enabled, using rtok", %{conn: base_conn} do
+    test "creates a new session with tfa enabled, using recovery_token", %{conn: base_conn} do
       user = insert(:user)
       {:ok, user} = Passport.confirm_tfa(user)
       conn = post base_conn, "/account/login", %{
@@ -51,7 +51,7 @@ defmodule Passport.SessionControllerTest do
       conn = post base_conn, "/account/login", %{
         "email" => user.email,
         "password" => user.password,
-        "rtok" => token
+        "recovery_token" => token
       }
 
       data = json_response(conn, 201)
@@ -61,14 +61,14 @@ defmodule Passport.SessionControllerTest do
       assert rest == user.tfa_recovery_tokens
     end
 
-    test "fails to create new session with tfa enabled, using incorrect rtok", %{conn: base_conn} do
+    test "fails to create new session with tfa enabled, using incorrect recovery_token", %{conn: base_conn} do
       user = insert(:user)
       {:ok, user} = Passport.confirm_tfa(user)
       old_tokens = user.tfa_recovery_tokens
       conn = post base_conn, "/account/login", %{
         "email" => user.email,
         "password" => user.password,
-        "rtok" => "00000000"
+        "recovery_token" => "00000000"
       }
 
       assert json_response(conn, 401)

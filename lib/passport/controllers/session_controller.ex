@@ -122,7 +122,7 @@ defmodule Passport.SessionController do
   def determine_auth_code(params) do
     cond do
       params["otp"] -> {:otp, params["otp"]}
-      params["rtok"] -> {:rtok, params["rtok"]}
+      params["recovery_token"] -> {:recovery_token, params["recovery_token"]}
       true -> nil
     end
   end
