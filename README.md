@@ -21,14 +21,14 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 ## Modules
 
-* Activatable
-* Authentication
-* Confirmable
-* Lockable
-* Recoverable
-* Rememberable - not implemented
-* Trackable
-* TwoFactorAuth
+* Activatable `:activatable`
+* Authenticatable `authenticatable`
+* Confirmable `confirmable`
+* Lockable `lockable`
+* Recoverable `recoverable`
+* Rememberable `rememberable` - not implemented
+* Trackable `trackable`
+* TwoFactorAuth `two_factor_auth`
 
 ## Schema
 
@@ -100,6 +100,8 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 ### Authenticatable Routes
 
+Provided by `Passport.SessionController`
+
 __Logout__
 
 * `DELETE /login`
@@ -110,6 +112,8 @@ __Login__
 * `POST /login`
 
 ### Confirmable Routes
+
+Provided by `Passport.ConfirmationController`
 
 __Request Email Confirmation__
 
@@ -129,6 +133,8 @@ __Cancel Email Confirmation__
 
 ### Recoverable Routes
 
+Provided by `Passport.PasswordController`
+
 __Request Password Reset__
 
 * `POST /password`
@@ -144,6 +150,8 @@ __Cancel Password Reset__
 * `DELETE /password/:token`
 
 ### TwoFactorAuth Routes
+
+Provided by `Passport.TwoFactorController`
 
 __Reset TFA Secret__
 
@@ -164,8 +172,6 @@ $ mix passport.init User users
 
 ### Models
 
-By default Passport includes all it's available
-
 ```elixir
 defmodule MyApp.User do
   use Ecto.Schema
@@ -178,6 +184,12 @@ defmodule MyApp.User do
     Passport.schema_fields()
   end
 end
+```
+
+By default Passport includes all it's available modules, individual modules can chosen by providing a list to the schema_fields call
+
+```elixir
+Passport.schema_fields([:authenticatable, :lockable, :two_factor_auth])
 ```
 
 ### Controllers
