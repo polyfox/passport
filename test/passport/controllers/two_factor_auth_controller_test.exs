@@ -2,7 +2,7 @@ defmodule Passport.TwoFactorAuthControllerTest do
   use Passport.Support.Web.ConnCase
 
   describe "POST /account/reset/tfa" do
-    test "can reset tfa_otp_secret_key", %{conn: conn} do
+    test "can reset tfa_otp_secret_key without tfa enabled", %{conn: conn} do
       user = insert(:user)
       old_tfa_otp_secret_key = user.tfa_otp_secret_key
       assert old_tfa_otp_secret_key
@@ -35,6 +35,28 @@ defmodule Passport.TwoFactorAuthControllerTest do
       assert user.id == data["id"]
       assert user.tfa_otp_secret_key == data["tfa_otp_secret_key"]
       refute old_tfa_otp_secret_key == data["tfa_otp_secret_key"]
+    end
+
+    test "can reset tfa_otp_secret_key with tfa enabled and recovery_token provided", %{conn: conn} do
+      user = insert(:user)
+      {:ok, user} = Passport.confirm_tfa(user)
+
+      old_tokens = user.tfa_recovery_tokens
+      [token | rest] = user.tfa_recovery_tokens
+      assert token
+
+      conn = post conn, "/account/reset/tfa", %{
+        "email" => user.email,
+        "password" => user.password,
+        "recovery_token" => token
+      }
+
+      data = json_response(conn, 201)
+      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
+
+      refute Enum.member?(user.tfa_recovery_tokens, token)
+      # consumes the token
+      assert rest == user.tfa_recovery_tokens
     end
 
     test "cannot reset if password is incorrect", %{conn: conn} do

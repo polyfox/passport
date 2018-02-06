@@ -21,6 +21,7 @@ defmodule Passport.Config do
     # Whether Activatable is a single flag :active or a timestamp :activated_at
     {:activatable_is_flag, true},
     {:otp_header_name, "x-passport-otp"},
+    {:tfa_recovery_token_count, 10},
   ]
   |> Enum.each(fn {name, default} ->
     def unquote(name)(namespace \\ nil) do

@@ -2,11 +2,14 @@ defmodule Passport.TwoFactorAuth do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields do
+  @type entity :: term
+
+  defmacro schema_fields(opts \\ []) do
     quote do
       field :tfa_otp_secret_key, :string
       field :tfa_enabled, :boolean, default: false
       field :tfa_attempts_count, :integer, default: 0
+      field :tfa_recovery_tokens, {:array, :string}, default: []
     end
   end
 
@@ -24,6 +27,7 @@ defmodule Passport.TwoFactorAuth do
       "add :tfa_otp_secret_key, :string",
       "add :tfa_enabled, :boolean",
       "add :tfa_attempts_count, :integer, default: 0",
+      "add :tfa_recovery_tokens, {:array, :string}, default: []",
     ]
   end
 
@@ -36,8 +40,21 @@ defmodule Passport.TwoFactorAuth do
 
   alias Passport.Keygen
 
+  @spec generate_secret_key :: String.t
   def generate_secret_key do
     Keygen.random_string32(16)
+  end
+
+  @spec generate_tfa_recovery_token :: String.t
+  def generate_tfa_recovery_token do
+    Keygen.random_string16(8)
+  end
+
+  @spec generate_tfa_recovery_tokens(non_neg_integer, [String.t]) :: [String.t]
+  def generate_tfa_recovery_tokens(count, acc \\ [])
+  def generate_tfa_recovery_tokens(0, acc), do: acc
+  def generate_tfa_recovery_tokens(count, acc) do
+    generate_tfa_recovery_tokens(count - 1, [generate_tfa_recovery_token() | acc])
   end
 
   defp patch_tfa_otp_secret_key(changeset) do
@@ -49,13 +66,11 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
-  @doc """
-  Confirm that TFA should be enabled for the provided entity.
-  """
-  @spec confirm_tfa(Ecto.Changeset.t) :: Ecto.Changeset.t
-  def confirm_tfa(changeset) do
-    changeset
-    |> put_change(:tfa_enabled, true)
+  defp try_clear_tfa_otp_secret_key(changeset) do
+    case get_field(changeset, :tfa_enabled) do
+      true -> changeset
+      _ -> put_change(changeset, :tfa_otp_secret_key, nil)
+    end
   end
 
   @doc """
@@ -68,16 +83,38 @@ defmodule Passport.TwoFactorAuth do
     |> patch_tfa_otp_secret_key()
   end
 
+  @doc """
+  Initializes a new list tfa_recovery_tokens on the given entity or changeset.
+  """
+  @spec prepare_tfa_recovery_tokens(Ecto.Changeset.t) :: Ecto.Changeset.t
+  def prepare_tfa_recovery_tokens(changeset) do
+    token_count = Passport.Config.tfa_recovery_token_count(changeset)
+    changeset
+    |> put_change(:tfa_recovery_tokens, generate_tfa_recovery_tokens(token_count))
+  end
+
+  @spec changeset(Ecto.Changeset.t | entity, map) :: Ecto.Changeset.t
   def changeset(record, params) do
     record
     |> cast(params, [:tfa_enabled])
+    |> try_clear_tfa_otp_secret_key()
     |> unique_constraint(:tfa_otp_secret_key)
+  end
+
+  @doc """
+  Confirm that TFA should be enabled for the provided entity.
+  """
+  @spec confirm_tfa(Ecto.Changeset.t) :: Ecto.Changeset.t
+  def confirm_tfa(changeset) do
+    changeset
+    |> put_change(:tfa_enabled, true)
+    |> prepare_tfa_recovery_tokens()
   end
 
   @doc """
   Check the totp regardless of if tfa_enabled state
   """
-  @spec abs_check_totp(term, String.t) :: {:ok, boolean} | {:error, term}
+  @spec abs_check_totp(entity, String.t) :: {:ok, boolean} | {:error, term}
   def abs_check_totp(record, nil) do
     {:error, {:missing, :otp}}
   end
@@ -89,13 +126,29 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
-  @spec check_totp(term, String.t | nil) :: {:ok, boolean} | {:error, term}
+  @spec check_totp(entity, String.t | nil) :: {:ok, boolean} | {:error, term}
   def check_totp(%{tfa_enabled: true} = record, totp) do
     abs_check_totp(record, totp)
   end
 
   def check_totp(_record, _totp) do
     {:error, :tfa_disabled}
+  end
+
+  @doc """
+  Attempts to use an existing recovery token, returns a Changeset with the token removed
+  """
+  @spec consume_recovery_token(entity, String.t) :: {:ok, Ecto.Changeset.t} | {:error, term}
+  def consume_recovery_token(entity, token) do
+    if Enum.member?(entity.tfa_recovery_tokens, token) do
+      changeset =
+        entity
+        |> change()
+        |> put_change(:tfa_recovery_tokens, List.delete(entity.tfa_recovery_tokens, token))
+      {:ok, changeset}
+    else
+      {:error, {:recovery_token_not_found, entity}}
+    end
   end
 
   def track_tfa_attempts(changeset, _remote_ip) do
