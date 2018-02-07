@@ -66,7 +66,9 @@ defmodule Passport.SessionController do
 
       {:error, {:missing_auth_code, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
-        send_unauthorized(conn, reason: "Invalid Auth code.")
+        conn
+        |> put_resp_header(Passport.Config.otp_header_name(), "required")
+        |> send_unauthorized(reason: "Invalid Auth code.")
 
       {:error, {:unauthorized_tfa, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
