@@ -90,6 +90,12 @@ defmodule Passport.SessionController do
       {:error, {:missing, attr}} ->
         send_parameter_missing(conn, fields: [attr])
 
+      {:error, {:unconfirmed, entity}} ->
+        send_unauthorized(conn, reason: "unconfirmed")
+
+      {:error, {:inactive, entity}} ->
+        send_unauthorized(conn, reason: "inactive")
+
       {:error, {:locked, entity}} ->
         conn
         |> put_resp_header("x-locked-at", DateTime.to_string(entity.locked_at))

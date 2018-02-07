@@ -320,8 +320,8 @@ defmodule Passport do
     case Authenticatable.check_password(entity, password) do
       {:ok, entity} ->
         cond do
-          not entity_activated?(entity) -> {:error, :inactive}
-          not entity_confirmed?(entity) -> {:error, :unconfirmed}
+          not entity_activated?(entity) -> {:error, {:inactive, entity}}
+          not entity_confirmed?(entity) -> {:error, {:unconfirmed, entity}}
           entity_locked?(entity) -> {:error, {:locked, entity}}
           true -> {:ok, entity}
         end
