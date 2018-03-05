@@ -163,6 +163,22 @@ __Confirm TFA__
 
 ## Usage
 
+### Config
+
+Passport has a handful of config options that are required for the library to work correctly:
+
+```elixir
+config :passport,
+  # the phoenix error view to use when rendering the api errors
+  error_view: Passport.Support.Web.ErrorView,
+  # a context module used for creating, retrieiving and managing sessions
+  sessions_client: Passport.Support.Sessions,
+  # the writable ecto repository, can be the same as the replica
+  primary_repo: Passport.Support.Repo,
+  # the readable ecto repository, can be the same as the primary
+  replica_repo: Passport.Support.Repo
+```
+
 ### Schema
 
 ```bash
@@ -230,5 +246,44 @@ end
 defmodule MyApp.Web.TwoFactorAuthController do
   use MyApp.Web, :controller
   use Passport.TwoFactorAuthController
+end
+```
+
+### Contexts
+
+Passport only requires a single context to be implemented, it's Sessions context, there it will handle retrieving sessions and their entities as well as checking authentication details.
+
+The module must be configered via `config :passport, sessions_client: ModuleName`
+
+```elixir
+defmodule Passport.Support.Sessions do
+  use Passport.Sessions
+
+  @impl true
+  def find_entity_by_identity(identity) do
+    Passport.Support.Users.find_user_by_email(identity)
+  end
+
+  @impl true
+  def check_authentication(entity, password) do
+    Passport.check_authenticatable(entity, password)
+  end
+
+  @impl true
+  def create_session(entity) do
+    # for simplicity sake use the entity's id as the token
+    {:ok, {entity.id, entity}}
+  end
+
+  @impl true
+  def get_session(token) do
+    {:ok, [user: Passport.Support.Users.get_user(token), token: token]}
+  end
+
+  @impl true
+  def destroy_session(%{user: user} = assigns) do
+    # nothing to do here, we don't exactly have an api keys table yet
+    {:ok, user}
+  end
 end
 ```
