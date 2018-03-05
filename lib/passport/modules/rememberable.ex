@@ -1,5 +1,5 @@
 defmodule Passport.Rememberable do
-  defmacro schema_fields(opts \\ []) do
+  defmacro schema_fields(_opts \\ []) do
     quote do
       field :remember_created_at, :utc_datetime
     end

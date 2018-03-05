@@ -33,7 +33,18 @@ defmodule Passport do
   @all_schema_keys Map.keys(@feature_map)
   @all_routeable_keys [:recoverable, :confirmable]
 
-  defmacro schema(features \\ @all_schema_keys) do
+  defp apply_only_and_except_filters(keys, options) do
+    cond do
+      Keyword.has_key?(options, :only) ->
+        Enum.filter(keys, &Enum.member?(options[:only], &1))
+      Keyword.has_key?(options, :except) ->
+        Enum.reject(keys, &Enum.member?(options[:except], &1))
+      true -> keys
+    end
+  end
+
+  defmacro schema(options \\ []) do
+    features = apply_only_and_except_filters(@all_schema_keys, options)
     quote location: :keep do
       @passport_enabled_features unquote(features)
 
@@ -54,24 +65,26 @@ defmodule Passport do
     end
   end
 
-  defmacro schema_fields(features \\ @all_schema_keys) do
+  defmacro schema_fields(options \\ []) do
+    features = apply_only_and_except_filters(@all_schema_keys, options)
     quote do
       unquote_splicing Enum.map(features, fn feature ->
         mod = Map.fetch!(@feature_map, feature)
         quote do
-          unquote(mod).schema_fields()
+          unquote(mod).schema_fields(unquote(options))
         end
       end)
     end
   end
 
-  defmacro routes(features \\ @all_routeable_keys, opts \\ []) do
+  defmacro routes(options \\ []) do
+    features = apply_only_and_except_filters(@all_schema_keys, options)
     quote do
       unquote_splicing Enum.map(features, fn feature ->
         mod = Map.fetch!(@feature_map, feature)
         quote do
           require unquote(mod)
-          unquote(mod).routes(unquote(opts))
+          unquote(mod).routes(unquote(options))
         end
       end)
     end

@@ -2,7 +2,7 @@ defmodule Passport.Lockable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields do
+  defmacro schema_fields(_options \\ []) do
     quote do
       field :failed_attempts, :integer, default: 0
       field :locked_at, :utc_datetime

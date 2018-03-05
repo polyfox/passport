@@ -6,7 +6,7 @@ defmodule Passport.Recoverable do
   # for now
   @type t :: term
 
-  defmacro schema_fields(opts \\ []) do
+  defmacro schema_fields(_opts \\ []) do
     quote do
       field :reset_password_token, :string
       field :reset_password_sent_at, :utc_datetime

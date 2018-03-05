@@ -4,7 +4,7 @@ defmodule Passport.TwoFactorAuth do
 
   @type entity :: term
 
-  defmacro schema_fields(opts \\ []) do
+  defmacro schema_fields(_opts \\ []) do
     quote do
       field :tfa_otp_secret_key, :string
       field :tfa_enabled, :boolean, default: false

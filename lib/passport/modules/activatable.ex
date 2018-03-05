@@ -4,7 +4,7 @@ defmodule Passport.Activatable do
   """
   import Ecto.Changeset
 
-  defmacro schema_fields do
+  defmacro schema_fields(_options \\ []) do
     quote do
       if Passport.Config.activatable_is_flag(__MODULE__) do
         field :active, :boolean, default: true
