@@ -60,6 +60,14 @@ defmodule Passport.SessionController do
 
   def handle_session_error(controller, conn, err) do
     case err do
+      {:error, {:missing, :otp}} ->
+        conn
+        |> put_resp_header(Passport.Config.otp_header_name(), "required")
+        |> send_unauthorized(reason: "Missing otp code")
+
+      {:error, {:missing, attr}} ->
+        send_parameter_missing(conn, fields: [attr])
+
       {:error, {:recovery_token_not_found, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
         send_unauthorized(conn, reason: "Invalid Recovery Token.")
@@ -81,14 +89,6 @@ defmodule Passport.SessionController do
       {:error, :unauthorized} ->
         # unauthorized, but no entity
         send_unauthorized(conn, reason: "Invalid email or password.")
-
-      {:error, {:missing, :otp}} ->
-        conn
-        |> put_resp_header(Passport.Config.otp_header_name(), "required")
-        |> send_unauthorized(reason: "Missing otp code")
-
-      {:error, {:missing, attr}} ->
-        send_parameter_missing(conn, fields: [attr])
 
       {:error, {:unconfirmed, entity}} ->
         send_unauthorized(conn, reason: "unconfirmed")

@@ -131,6 +131,12 @@ defmodule Passport.SessionControllerTest do
 
       data = json_response(conn, 428)
     end
+
+    test "will error if no parameters are provided", %{conn: conn} do
+      conn = post conn, "/account/login", %{}
+
+      json_response(conn, 422)
+    end
   end
 
   describe "DELETE /account/login" do
