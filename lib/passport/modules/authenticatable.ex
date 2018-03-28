@@ -7,7 +7,7 @@ defmodule Passport.Authenticatable do
 
   import Ecto.Changeset
 
-  defmacro schema_fields do
+  defmacro schema_fields(_options \\ []) do
     quote do
       field Config.password_hash_field(__MODULE__), :string
       field :password, :string, virtual: true

@@ -112,7 +112,10 @@ defmodule Passport.Sessions do
   end
 
   @spec authenticate_entity(String.t, String.t, String.t) :: {:ok, term} | {:error, term}
-  def authenticate_entity(identity, password, code \\ nil) do
+  def authenticate_entity(identity, password, code \\ nil)
+  def authenticate_entity(nil, _password, _code), do: {:error, {:missing, :identity}}
+  def authenticate_entity(_identity, nil, _code), do: {:error, {:missing, :password}}
+  def authenticate_entity(identity, password, code) do
     identity
     |> basic_authenticate_entity(password)
     |> case do

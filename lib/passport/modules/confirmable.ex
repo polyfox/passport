@@ -2,7 +2,7 @@ defmodule Passport.Confirmable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields do
+  defmacro schema_fields(_options \\ []) do
     quote do
       field :confirmation_token, :string
       field :confirmed_at, :utc_datetime
