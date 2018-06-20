@@ -33,6 +33,28 @@ defmodule Passport.PasswordControllerTest do
 
       Passport.check_authenticatable(user, "new_password")
     end
+
+    test "password resets are treated as email confirmations", %{conn: conn} do
+      user = insert(:user,
+        reset_password_token: Passport.Recoverable.generate_reset_password_token())
+      {:ok, user} = Passport.prepare_confirmation(user)
+      assert user.reset_password_token
+      assert user.confirmation_token
+
+      conn = post conn, "/account/password/#{user.reset_password_token}", %{
+        "password" => "new_password",
+        "password_confirmation" => "new_password"
+      }
+
+      assert json_response(conn, 204)
+
+      user = reload_user(user)
+      refute user.reset_password_token
+      refute user.confirmation_token
+      assert user.confirmed_at
+
+      Passport.check_authenticatable(user, "new_password")
+    end
   end
 
   describe "DELETE /account/password/:token" do

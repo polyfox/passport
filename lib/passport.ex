@@ -266,9 +266,16 @@ defmodule Passport do
   """
   @spec reset_password(term, params) :: {:ok, term} | {:error, term}
   def reset_password(entity, params) do
-    entity
-    |> changeset(params, :password)
-    |> Repo.primary().update()
+    changeset =
+      entity
+      |> changeset(params, :password)
+    # https://github.com/polyfox/passport/issues/11
+    changeset = if Config.features?(entity, :confirmable) do
+      Confirmable.confirm(changeset)
+    else
+      changeset
+    end
+    Repo.primary().update(changeset)
   end
 
   @doc """
