@@ -287,3 +287,22 @@ defmodule Passport.Support.Sessions do
   end
 end
 ```
+
+### Issuing a Password Change
+
+```elixir
+# for immediately changing it
+{:ok, entity} =
+  Passport.change_password(entity, %{
+    old_password: "my_old_password",
+    password: "new_password",
+    password_confirmation: "new_password"
+  })
+# as apart of a changeset
+changeset =
+  Passport.changeset(entity, %{
+    old_password: "my_old_password",
+    password: "new_password",
+    password_confirmation: "new_password"
+  }, :password_change)
+```

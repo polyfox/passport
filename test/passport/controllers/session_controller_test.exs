@@ -1,5 +1,5 @@
 defmodule Passport.SessionControllerTest do
-  use Passport.Support.Web.ConnCase
+  use Passport.Support.Web.ConnCase, async: false
 
   describe "POST /account/login" do
     test "creates a new session with basic auth", %{conn: conn} do

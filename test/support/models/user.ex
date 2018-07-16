@@ -21,6 +21,6 @@ defmodule Passport.Support.User do
       :email,
       :username
     ])
-    |> Passport.changeset(params)
+    |> Passport.changeset(params, :update)
   end
 end

@@ -93,9 +93,11 @@ defmodule Passport.TwoFactorAuth do
     |> put_change(:tfa_recovery_tokens, generate_tfa_recovery_tokens(token_count))
   end
 
-  @spec changeset(Ecto.Changeset.t | entity, map) :: Ecto.Changeset.t
-  def changeset(record, params) do
-    record
+  @spec changeset(Ecto.Changeset.t | entity, map, :update) :: Ecto.Changeset.t
+  def changeset(entity, params, kind \\ :update)
+
+  def changeset(entity, params, :update) do
+    entity
     |> cast(params, [:tfa_enabled])
     |> try_clear_tfa_otp_secret_key()
     |> unique_constraint(:tfa_otp_secret_key)

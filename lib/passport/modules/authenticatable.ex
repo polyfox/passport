@@ -10,6 +10,7 @@ defmodule Passport.Authenticatable do
   defmacro schema_fields(_options \\ []) do
     quote do
       field Config.password_hash_field(__MODULE__), :string
+      field :old_password, :string, virtual: true
       field :password, :string, virtual: true
       field :password_confirmation, :string, virtual: true
       field :password_changed, :boolean, virtual: true
@@ -63,12 +64,29 @@ defmodule Passport.Authenticatable do
     end
   end
 
+  def check_old_password(changeset) do
+    old_password = get_field(changeset, :old_password)
+    if checkpw(old_password, get_field(changeset, Config.password_hash_field(changeset))) do
+      changeset
+    else
+      add_error(changeset, :password, "old password does not match")
+    end
+  end
+
   @spec changeset(Ecto.Changeset.t, map, :update | :reset) :: Ecto.Changeset.t
   def changeset(changeset, params, kind \\ :update)
 
   def changeset(changeset, params, :update) do
     changeset
     |> cast(params, [:password, :password_confirmation])
+    |> hash_password()
+    |> validate_required([Config.password_hash_field(changeset)])
+  end
+
+  def changeset(changeset, params, :change) do
+    changeset
+    |> cast(params, [:old_password, :password, :password_confirmation])
+    |> check_old_password()
     |> hash_password()
     |> validate_required([Config.password_hash_field(changeset)])
   end
