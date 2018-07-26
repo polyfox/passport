@@ -58,7 +58,7 @@ defmodule Passport.SessionController do
   import Phoenix.Controller
   import Passport.APIHelper
 
-  def handle_session_error(controller, conn, err) do
+  def handle_session_error(_controller, conn, err) do
     case err do
       {:error, {:missing, :otp}} ->
         conn
@@ -90,10 +90,10 @@ defmodule Passport.SessionController do
         # unauthorized, but no entity
         send_unauthorized(conn, reason: "Invalid email or password.")
 
-      {:error, {:unconfirmed, entity}} ->
+      {:error, {:unconfirmed, _entity}} ->
         send_unauthorized(conn, reason: "unconfirmed")
 
-      {:error, {:inactive, entity}} ->
+      {:error, {:inactive, _entity}} ->
         send_unauthorized(conn, reason: "inactive")
 
       {:error, {:locked, entity}} ->
@@ -101,7 +101,7 @@ defmodule Passport.SessionController do
         |> put_resp_header("x-locked-at", DateTime.to_string(entity.locked_at))
         |> send_locked(reason: "Too many failed attempts.")
 
-      {:error, {:missing_tfa_otp_secret_key, entity}} ->
+      {:error, {:missing_tfa_otp_secret_key, _entity}} ->
         conn
         # Precondition required
         |> put_resp_header(Passport.Config.otp_header_name(), "required")
@@ -151,7 +151,7 @@ defmodule Passport.SessionController do
     end
   end
 
-  def delete(controller, %{assigns: assigns} = conn, params) do
+  def delete(_controller, %{assigns: assigns} = conn, _params) do
     case Passport.Sessions.destroy_session(assigns) do
       {:ok, _session} ->
         send_no_content(conn)

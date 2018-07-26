@@ -117,7 +117,7 @@ defmodule Passport.TwoFactorAuth do
   Check the totp regardless of if tfa_enabled state
   """
   @spec abs_check_totp(entity, String.t) :: {:ok, boolean} | {:error, term}
-  def abs_check_totp(record, nil) do
+  def abs_check_totp(_record, nil) do
     {:error, {:missing, :otp}}
   end
 

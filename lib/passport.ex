@@ -31,7 +31,6 @@ defmodule Passport do
   }
 
   @all_schema_keys Map.keys(@feature_map)
-  @all_routeable_keys [:recoverable, :confirmable]
 
   defp apply_only_and_except_filters(keys, options) do
     cond do
@@ -107,7 +106,7 @@ defmodule Passport do
   end
 
   @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | term
-  def find_by_confirmation_token(query, nil), do: nil
+  def find_by_confirmation_token(_query, nil), do: nil
   def find_by_confirmation_token(query, token) do
     query
     |> Confirmable.by_confirmation_token(token)
@@ -115,7 +114,7 @@ defmodule Passport do
   end
 
   @spec find_by_reset_password_token(query :: term, token :: String.t) :: nil | term
-  def find_by_reset_password_token(query, nil), do: nil
+  def find_by_reset_password_token(_query, nil), do: nil
   def find_by_reset_password_token(query, token) do
     query
     |> Recoverable.by_reset_password_token(token)
@@ -208,16 +207,15 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec changeset(entity :: term, params :: map, :update | :password) :: Ecto.Changeset.t
-  def changeset(entity, params, kind \\ :update)
-
   @doc """
-  Changeset used for password resets/changes
-
   Args:
   * `entity` - the user to set password for
   * `params` - the parameters
+  * `kind` - the kind of changes to apply
   """
+  @spec changeset(entity :: term, params :: map, :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  def changeset(entity, params, kind \\ :update)
+
   def changeset(entity, params, :password_reset) do
     changeset = entity
     changeset = if Config.features?(entity, :authenticatable) do
@@ -230,15 +228,9 @@ defmodule Passport do
     else
       changeset
     end
+    changeset
   end
 
-  @doc """
-  Changeset used for password changes
-
-  Args:
-  * `entity` - the user to update
-  * `params` - the parameters
-  """
   def changeset(entity, params, :password_change) do
     changeset = entity
     if Config.features?(entity, :authenticatable) do
@@ -248,13 +240,6 @@ defmodule Passport do
     end
   end
 
-  @doc """
-  Changeset used for updates
-
-  Args:
-  * `entity` - the user to update
-  * `params` - the parameters
-  """
   def changeset(entity, params, :update) do
     changeset = entity
     changeset = if Config.features?(entity, :two_factor_auth) do
