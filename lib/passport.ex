@@ -31,7 +31,6 @@ defmodule Passport do
   }
 
   @all_schema_keys Map.keys(@feature_map)
-  @all_routeable_keys [:recoverable, :confirmable]
 
   defp apply_only_and_except_filters(keys, options) do
     cond do
@@ -107,7 +106,7 @@ defmodule Passport do
   end
 
   @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | term
-  def find_by_confirmation_token(query, nil), do: nil
+  def find_by_confirmation_token(_query, nil), do: nil
   def find_by_confirmation_token(query, token) do
     query
     |> Confirmable.by_confirmation_token(token)
@@ -115,7 +114,7 @@ defmodule Passport do
   end
 
   @spec find_by_reset_password_token(query :: term, token :: String.t) :: nil | term
-  def find_by_reset_password_token(query, nil), do: nil
+  def find_by_reset_password_token(_query, nil), do: nil
   def find_by_reset_password_token(query, token) do
     query
     |> Recoverable.by_reset_password_token(token)
@@ -209,13 +208,15 @@ defmodule Passport do
   end
 
   @doc """
-  Changeset used for password resets/changes
-
   Args:
   * `entity` - the user to set password for
   * `params` - the parameters
+  * `kind` - the kind of changes to apply
   """
-  def changeset(entity, params, :password) do
+  @spec changeset(entity :: term, params :: map, :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  def changeset(entity, params, kind \\ :update)
+
+  def changeset(entity, params, :password_reset) do
     changeset = entity
     changeset = if Config.features?(entity, :authenticatable) do
       Authenticatable.changeset(changeset, params, :reset)
@@ -227,24 +228,27 @@ defmodule Passport do
     else
       changeset
     end
+    changeset
   end
 
-  @doc """
-  Changeset used for updates
+  def changeset(entity, params, :password_change) do
+    changeset = entity
+    if Config.features?(entity, :authenticatable) do
+      Authenticatable.changeset(changeset, params, :change)
+    else
+      changeset
+    end
+  end
 
-  Args:
-  * `entity` - the user to update
-  * `params` - the parameters
-  """
-  def changeset(entity, params) do
+  def changeset(entity, params, :update) do
     changeset = entity
     changeset = if Config.features?(entity, :two_factor_auth) do
-      TwoFactorAuth.changeset(changeset, params)
+      TwoFactorAuth.changeset(changeset, params, :update)
     else
       changeset
     end
     if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params)
+      Authenticatable.changeset(changeset, params, :update)
     else
       changeset
     end
@@ -266,15 +270,31 @@ defmodule Passport do
   """
   @spec reset_password(term, params) :: {:ok, term} | {:error, term}
   def reset_password(entity, params) do
-    changeset =
-      entity
-      |> changeset(params, :password)
+    changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
     changeset = if Config.features?(entity, :confirmable) do
       Confirmable.confirm(changeset)
     else
       changeset
     end
+    Repo.primary().update(changeset)
+  end
+
+  @doc """
+  Attempts to change the entity's password, the old password must be provided
+
+  Params:
+  * `entity` - the target resource that should have it's password changed
+  * `params` - the map of parameters
+
+  Allowed Fields in Params:
+  * `old_password` - the old password
+  * `password` - the new password
+  * `password_confirmation` - the new password's confirmation
+  """
+  @spec change_password(term, params) :: {:ok, term} | {:error, term}
+  def change_password(entity, params) do
+    changeset = changeset(entity, params, :password_change)
     Repo.primary().update(changeset)
   end
 

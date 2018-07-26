@@ -23,7 +23,7 @@ defmodule Passport.Support.Sessions do
   end
 
   @impl true
-  def destroy_session(%{user: user} = assigns) do
+  def destroy_session(%{user: user}) do
     # nothing to do here, we don't exactly have an api keys table yet
     {:ok, user}
   end

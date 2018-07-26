@@ -80,14 +80,14 @@ defmodule Passport.ConfirmationController do
     end
   end
 
-  def show(controller, conn, params) do
+  def show(controller, conn, _params) do
     case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
       nil -> send_not_found(conn)
       confirmable -> Phoenix.Controller.render(conn, "show.json", data: confirmable)
     end
   end
 
-  def confirm(controller, conn, params) do
+  def confirm(controller, conn, _params) do
     case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
       nil -> send_not_found(conn)
       confirmable ->
@@ -102,13 +102,13 @@ defmodule Passport.ConfirmationController do
     end
   end
 
-  def delete(controller, conn, params) do
+  def delete(controller, conn, _params) do
     case Passport.find_by_confirmation_token(controller.confirmable_model(), conn.path_params["token"]) do
       nil -> send_not_found(conn)
       confirmable ->
         case Passport.cancel_confirmation(confirmable) do
-          {:ok, entity} ->
-            send_not_found(conn)
+          {:ok, _entity} ->
+            send_no_content(conn)
 
           {:error, %Ecto.Changeset{} = changeset} ->
             send_changeset_error(conn, changeset: changeset)

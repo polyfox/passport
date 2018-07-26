@@ -36,7 +36,6 @@ defmodule Passport.Plug.VerifyHeader do
       # will take the first auth header
       # Authorization: <jwt>
   """
-  alias Passport.Config
   import Passport.APIHelper
 
   def init(opts \\ %{}) do
@@ -58,13 +57,13 @@ defmodule Passport.Plug.VerifyHeader do
   defp verify_token(conn, nil, _), do: send_unauthenticated(conn)
   defp verify_token(conn, "", _), do: send_unauthenticated(conn)
 
-  defp verify_token(conn, token, opts) do
+  defp verify_token(conn, token, _opts) do
     case Passport.Sessions.get_session(token) do
       {:ok, claims} ->
         set_current_claims(conn, claims)
       {:error, :locked} ->
         send_locked(conn)
-      {:error, reason} ->
+      {:error, _reason} ->
         send_unauthorized(conn)
     end
   end
