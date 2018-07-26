@@ -34,7 +34,7 @@ defmodule Passport.SessionControllerTest do
         "otp" => :pot.totp(user.tfa_otp_secret_key)
       }
 
-      data = json_response(conn, 201)
+      assert json_response(conn, 201)
     end
 
     test "creates a new session with tfa enabled, using recovery_token", %{conn: base_conn} do
@@ -54,7 +54,7 @@ defmodule Passport.SessionControllerTest do
         "recovery_token" => token
       }
 
-      data = json_response(conn, 201)
+      assert json_response(conn, 201)
 
       user = Passport.Repo.replica().get(Passport.Support.User, user.id)
 
@@ -129,13 +129,13 @@ defmodule Passport.SessionControllerTest do
         "password" => user.password
       }
 
-      data = json_response(conn, 428)
+      assert json_response(conn, 428)
     end
 
     test "will error if no parameters are provided", %{conn: conn} do
       conn = post conn, "/account/login", %{}
 
-      json_response(conn, 422)
+      assert json_response(conn, 422)
     end
   end
 
@@ -145,7 +145,7 @@ defmodule Passport.SessionControllerTest do
       conn = put_req_header(conn, "authorization", "Bearer #{user.id}")
       conn = delete conn, "/account/login"
 
-      response(conn, 204)
+      assert response(conn, 204)
     end
   end
 end

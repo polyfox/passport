@@ -108,7 +108,7 @@ defmodule Passport.ConfirmationController do
       confirmable ->
         case Passport.cancel_confirmation(confirmable) do
           {:ok, _entity} ->
-            send_not_found(conn)
+            send_no_content(conn)
 
           {:error, %Ecto.Changeset{} = changeset} ->
             send_changeset_error(conn, changeset: changeset)

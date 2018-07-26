@@ -7,7 +7,7 @@ defmodule Passport.ConfirmationControllerTest do
       conn = post conn, "/account/confirm/email", %{
         "email" => user.email
       }
-
+      json_response(conn, 204)
       assert user = reload_user(user)
 
       assert user.confirmation_token
@@ -50,6 +50,7 @@ defmodule Passport.ConfirmationControllerTest do
       user = insert(:user)
       {:ok, user} = Passport.prepare_confirmation(user)
       conn = delete conn, "/account/confirm/email/#{user.confirmation_token}"
+      json_response(conn, 204)
 
       user = reload_user(user)
       refute user.confirmation_token

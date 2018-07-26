@@ -41,7 +41,6 @@ defmodule Passport.TwoFactorAuthControllerTest do
       user = insert(:user)
       {:ok, user} = Passport.confirm_tfa(user)
 
-      old_tokens = user.tfa_recovery_tokens
       [token | rest] = user.tfa_recovery_tokens
       assert token
 
@@ -51,7 +50,8 @@ defmodule Passport.TwoFactorAuthControllerTest do
         "recovery_token" => token
       }
 
-      data = json_response(conn, 201)
+      assert json_response(conn, 201)
+
       user = Passport.Repo.replica().get(Passport.Support.User, user.id)
 
       refute Enum.member?(user.tfa_recovery_tokens, token)
