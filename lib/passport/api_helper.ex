@@ -47,6 +47,10 @@ defmodule Passport.APIHelper do
     send_error(conn, 422, "parameter_missing.json", assigns)
   end
 
+  def send_parameter_invalid(conn, assigns \\ []) do
+    send_error(conn, 422, "parameter_invalid.json", assigns)
+  end
+
   def send_changeset_error(conn, assigns \\ []) do
     send_error(conn, 422, "error.json", assigns)
   end

@@ -68,6 +68,9 @@ defmodule Passport.SessionController do
       {:error, {:missing, attr}} ->
         send_parameter_missing(conn, fields: [attr])
 
+      {:error, {:invalid_parameter, attr}} ->
+        send_parameter_invalid(conn, fields: [attr])
+
       {:error, {:recovery_token_not_found, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
         send_unauthorized(conn, reason: "Invalid Recovery Token.")
