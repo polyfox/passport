@@ -141,7 +141,7 @@ defmodule Passport.SessionControllerTest do
   end
 
   describe "DELETE /account/login" do
-    test "deletes a session", %{conn: conn} do
+    test "destroys a session", %{conn: conn} do
       user = insert(:user)
       conn = put_req_header(conn, "authorization", "Bearer #{user.id}")
       conn = delete conn, "/account/login"
