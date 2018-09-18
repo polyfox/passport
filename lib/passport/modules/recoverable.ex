@@ -48,12 +48,14 @@ defmodule Passport.Recoverable do
 
   def clear_reset_password(changeset) do
     changeset
+    |> change()
     |> put_change(:reset_password_token, nil)
     |> put_change(:reset_password_sent_at, nil)
   end
 
   def prepare_reset_password(changeset) do
     changeset
+    |> change()
     |> put_change(:reset_password_token, generate_reset_password_token())
     |> put_change(:reset_password_sent_at, DateTime.utc_now())
   end

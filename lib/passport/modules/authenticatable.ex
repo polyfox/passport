@@ -75,7 +75,7 @@ defmodule Passport.Authenticatable do
           |> hash_password()
           |> validate_required([password_hash_field])
         else
-          changeset
+          add_error(changeset, :old_password, "old password does not match")
         end
     end
   end

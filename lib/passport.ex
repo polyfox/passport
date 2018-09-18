@@ -217,11 +217,10 @@ defmodule Passport do
   def changeset(entity, params, kind \\ :update)
 
   def changeset(entity, params, :password_reset) do
-    changeset = entity
     changeset = if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :reset)
+      Authenticatable.changeset(entity, params, :reset)
     else
-      changeset
+      entity
     end
     changeset = if Config.features?(entity, :recoverable) do
       Recoverable.clear_reset_password(changeset)
@@ -232,11 +231,10 @@ defmodule Passport do
   end
 
   def changeset(entity, params, :password_change) do
-    changeset = entity
     if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :change)
+      Authenticatable.changeset(entity, params, :change)
     else
-      changeset
+      entity
     end
   end
 
@@ -244,18 +242,17 @@ defmodule Passport do
     if Config.features?(entity, :authenticatable) do
       Authenticatable.changeset(entity, params, :update)
     else
-      changeset
+      entity
     end
   end
 
   def changeset(entity, params, :update) do
-    changeset = entity
-    changeset = if Config.features?(entity, :two_factor_auth) do
-      TwoFactorAuth.changeset(changeset, params, :update)
+    if Config.features?(entity, :two_factor_auth) do
+      TwoFactorAuth.changeset(entity, params, :update)
     else
-      changeset
+      entity
     end
-    changeset(changeset, params, :password_update)
+    |> changeset(params, :password_update)
   end
 
   @spec prepare_reset_password(Ecto.Changeset.t | Recoverable.t) :: {:ok, term} | {:error, term}
@@ -304,7 +301,7 @@ defmodule Passport do
   def update_password(entity, params) do
     entity
     |> changeset(params, :password_update)
-    |> Repo.primary().update(changeset)
+    |> Repo.primary().update()
   end
 
   @doc """
@@ -338,7 +335,7 @@ defmodule Passport do
     if Config.features?(entity, :recoverable) do
       Recoverable.clear_reset_password(entity)
     else
-      changeset
+      entity
     end
     |> Repo.primary().update()
   end
