@@ -276,16 +276,41 @@ defmodule Passport do
   def reset_password(entity, params) do
     changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
-    changeset = if Config.features?(entity, :confirmable) do
+    if Config.features?(entity, :confirmable) do
       Confirmable.confirm(changeset)
     else
       changeset
     end
-    Repo.primary().update(changeset)
+    |> Repo.primary().update()
   end
 
   @doc """
-  Attempts to change the entity's password
+  Attempts to change the entity's password from the old password.
+
+  The old password must be supplied in order to change it.
+
+  This should be used for entitys updating their own password.
+
+  Params:
+  * `entity` - the target resource that should have it's password changed
+  * `params` - the map of parameters
+
+  Allowed Fields in Params:
+  * `old_password` - the original password
+  * `password` - the new password
+  * `password_confirmation` - the new password's confirmation
+  """
+  @spec update_password(term, params) :: {:ok, term} | {:error, term}
+  def update_password(entity, params) do
+    entity
+    |> changeset(params, :password_update)
+    |> Repo.primary().update(changeset)
+  end
+
+  @doc """
+  Attempts to change the entity's password, this will ignore the old password and replaace it.
+
+  This should be used for admins changing an entity's password.
 
   Params:
   * `entity` - the target resource that should have it's password changed
@@ -297,8 +322,9 @@ defmodule Passport do
   """
   @spec change_password(term, params) :: {:ok, term} | {:error, term}
   def change_password(entity, params) do
-    changeset = changeset(entity, params, :password_change)
-    Repo.primary().update(changeset)
+    entity
+    |> changeset(params, :password_change)
+    |> Repo.primary().update()
   end
 
   @doc """
@@ -309,13 +335,12 @@ defmodule Passport do
   """
   @spec clear_reset_password(term) :: {:ok, term} | {:error, term}
   def clear_reset_password(entity) do
-    changeset = change(entity)
-    changeset = if Config.features?(entity, :recoverable) do
-      Recoverable.clear_reset_password(changeset)
+    if Config.features?(entity, :recoverable) do
+      Recoverable.clear_reset_password(entity)
     else
       changeset
     end
-    Repo.primary().update(changeset)
+    |> Repo.primary().update()
   end
 
   @spec on_successful_sign_in(term, remote_ip :: term) :: {:ok, term} | {:error, term}
