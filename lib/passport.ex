@@ -213,7 +213,7 @@ defmodule Passport do
   * `params` - the parameters
   * `kind` - the kind of changes to apply
   """
-  @spec changeset(entity :: term, params :: map, :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  @spec changeset(entity :: term, params :: map, :password_update | :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
 
   def changeset(entity, params, :password_reset) do
@@ -240,6 +240,14 @@ defmodule Passport do
     end
   end
 
+  def changeset(entity, params, :password_update) do
+    if Config.features?(entity, :authenticatable) do
+      Authenticatable.changeset(entity, params, :update)
+    else
+      changeset
+    end
+  end
+
   def changeset(entity, params, :update) do
     changeset = entity
     changeset = if Config.features?(entity, :two_factor_auth) do
@@ -247,11 +255,7 @@ defmodule Passport do
     else
       changeset
     end
-    if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :update)
-    else
-      changeset
-    end
+    changeset(changeset, params, :password_update)
   end
 
   @spec prepare_reset_password(Ecto.Changeset.t | Recoverable.t) :: {:ok, term} | {:error, term}
@@ -281,14 +285,13 @@ defmodule Passport do
   end
 
   @doc """
-  Attempts to change the entity's password, the old password must be provided
+  Attempts to change the entity's password
 
   Params:
   * `entity` - the target resource that should have it's password changed
   * `params` - the map of parameters
 
   Allowed Fields in Params:
-  * `old_password` - the old password
   * `password` - the new password
   * `password_confirmation` - the new password's confirmation
   """
