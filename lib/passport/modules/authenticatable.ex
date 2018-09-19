@@ -65,41 +65,48 @@ defmodule Passport.Authenticatable do
   end
 
   def check_old_password(changeset) do
-    old_password = get_field(changeset, :old_password)
-    if checkpw(old_password, get_field(changeset, Config.password_hash_field(changeset))) do
-      changeset
-    else
-      add_error(changeset, :password, "old password does not match")
+    case get_field(changeset, :old_password) do
+      nil -> changeset
+      old_password ->
+        password_hash_field = Config.password_hash_field(changeset)
+        password_hash = get_field(changeset, password_hash_field)
+        if checkpw(old_password, password_hash) do
+          changeset
+          |> hash_password()
+          |> validate_required([password_hash_field])
+        else
+          add_error(changeset, :old_password, "old password does not match")
+        end
     end
   end
 
-  @spec changeset(Ecto.Changeset.t, map, :update | :reset) :: Ecto.Changeset.t
+  @doc """
+  Args:
+  * `changeset` - the authenticable record changeset
+  * `params` - the parameters to update with
+  * `kind` - the changeset's kind
+
+  Kind:
+  * `:update` - updates the entity's password, the old password is required
+  * `:change` - updates the entity's password, will replace the password
+  * `:reset` - replaces entity's password, will fail if the password isn't set
+  """
+  @spec changeset(Ecto.Changeset.t, map, :update | :change | :reset) :: Ecto.Changeset.t
   def changeset(changeset, params, kind \\ :update)
 
   def changeset(changeset, params, :update) do
+    changeset
+    |> cast(params, [:old_password, :password, :password_confirmation])
+    |> check_old_password()
+  end
+
+  def changeset(changeset, params, :change) do
     changeset
     |> cast(params, [:password, :password_confirmation])
     |> hash_password()
     |> validate_required([Config.password_hash_field(changeset)])
   end
 
-  def changeset(changeset, params, :change) do
-    changeset
-    |> cast(params, [:old_password, :password, :password_confirmation])
-    |> check_old_password()
-    |> hash_password()
-    |> validate_required([Config.password_hash_field(changeset)])
-  end
-
-  @doc """
-  This variant of the authenticatable changeset is used for password resets
-
-  It will force the user to change the password, instead of just optionally passing it.
-
-  Args:
-  * `changeset` - the authenticable record changeset
-  * `params` - the parameters to update with
-  """
   def changeset(changeset, params, :reset) do
     changeset
     |> cast(params, [:password, :password_confirmation])

@@ -213,15 +213,14 @@ defmodule Passport do
   * `params` - the parameters
   * `kind` - the kind of changes to apply
   """
-  @spec changeset(entity :: term, params :: map, :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  @spec changeset(entity :: term, params :: map, :password_update | :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
 
   def changeset(entity, params, :password_reset) do
-    changeset = entity
     changeset = if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :reset)
+      Authenticatable.changeset(entity, params, :reset)
     else
-      changeset
+      entity
     end
     changeset = if Config.features?(entity, :recoverable) do
       Recoverable.clear_reset_password(changeset)
@@ -232,26 +231,28 @@ defmodule Passport do
   end
 
   def changeset(entity, params, :password_change) do
-    changeset = entity
     if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :change)
+      Authenticatable.changeset(entity, params, :change)
     else
-      changeset
+      entity
+    end
+  end
+
+  def changeset(entity, params, :password_update) do
+    if Config.features?(entity, :authenticatable) do
+      Authenticatable.changeset(entity, params, :update)
+    else
+      entity
     end
   end
 
   def changeset(entity, params, :update) do
-    changeset = entity
-    changeset = if Config.features?(entity, :two_factor_auth) do
-      TwoFactorAuth.changeset(changeset, params, :update)
+    if Config.features?(entity, :two_factor_auth) do
+      TwoFactorAuth.changeset(entity, params, :update)
     else
-      changeset
+      entity
     end
-    if Config.features?(entity, :authenticatable) do
-      Authenticatable.changeset(changeset, params, :update)
-    else
-      changeset
-    end
+    |> changeset(params, :password_update)
   end
 
   @spec prepare_reset_password(Ecto.Changeset.t | Recoverable.t) :: {:ok, term} | {:error, term}
@@ -272,30 +273,55 @@ defmodule Passport do
   def reset_password(entity, params) do
     changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
-    changeset = if Config.features?(entity, :confirmable) do
+    if Config.features?(entity, :confirmable) do
       Confirmable.confirm(changeset)
     else
       changeset
     end
-    Repo.primary().update(changeset)
+    |> Repo.primary().update()
   end
 
   @doc """
-  Attempts to change the entity's password, the old password must be provided
+  Attempts to change the entity's password from the old password.
+
+  The old password must be supplied in order to change it.
+
+  This should be used for entitys updating their own password.
 
   Params:
   * `entity` - the target resource that should have it's password changed
   * `params` - the map of parameters
 
   Allowed Fields in Params:
-  * `old_password` - the old password
+  * `old_password` - the original password
+  * `password` - the new password
+  * `password_confirmation` - the new password's confirmation
+  """
+  @spec update_password(term, params) :: {:ok, term} | {:error, term}
+  def update_password(entity, params) do
+    entity
+    |> changeset(params, :password_update)
+    |> Repo.primary().update()
+  end
+
+  @doc """
+  Attempts to change the entity's password, this will ignore the old password and replaace it.
+
+  This should be used for admins changing an entity's password.
+
+  Params:
+  * `entity` - the target resource that should have it's password changed
+  * `params` - the map of parameters
+
+  Allowed Fields in Params:
   * `password` - the new password
   * `password_confirmation` - the new password's confirmation
   """
   @spec change_password(term, params) :: {:ok, term} | {:error, term}
   def change_password(entity, params) do
-    changeset = changeset(entity, params, :password_change)
-    Repo.primary().update(changeset)
+    entity
+    |> changeset(params, :password_change)
+    |> Repo.primary().update()
   end
 
   @doc """
@@ -306,13 +332,12 @@ defmodule Passport do
   """
   @spec clear_reset_password(term) :: {:ok, term} | {:error, term}
   def clear_reset_password(entity) do
-    changeset = change(entity)
-    changeset = if Config.features?(entity, :recoverable) do
-      Recoverable.clear_reset_password(changeset)
+    if Config.features?(entity, :recoverable) do
+      Recoverable.clear_reset_password(entity)
     else
-      changeset
+      entity
     end
-    Repo.primary().update(changeset)
+    |> Repo.primary().update()
   end
 
   @spec on_successful_sign_in(term, remote_ip :: term) :: {:ok, term} | {:error, term}
