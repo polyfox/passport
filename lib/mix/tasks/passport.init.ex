@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Passport.Init do
       case OptionParser.parse(args) do
         {_opts, [name, table_name], _} ->
           ensure_repo(repo, args)
-          path = migrations_path(repo)
+          path = Ecto.Migrator.migrations_path(repo)
           model_name = String.replace(underscore(name), "/", "_")
           file = Path.join(path, "#{timestamp()}_add_passport_fields_to_#{model_name}.exs")
           create_directory path
