@@ -42,7 +42,7 @@ defmodule Passport.Mixfile do
   defp deps do
     [
       # Phoenix for testing
-      {:phoenix, "~> 1.3.0"},
+      {:phoenix, "~> 1.3.0 or "~> 1.4.0"},
       {:phoenix_pubsub, "~> 1.0"},
       {:phoenix_ecto, "~> 3.2", only: [:test]},
       {:phoenix_html, "~> 2.10", only: [:test]},
