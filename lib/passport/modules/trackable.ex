@@ -44,6 +44,6 @@ defmodule Passport.Trackable do
     |> put_change(:last_sign_in_ip, get_field(changeset, :current_sign_in_ip))
     |> put_change(:last_sign_in_at, get_field(changeset, :current_sign_in_at))
     |> put_change(:current_sign_in_ip, format_remote_ip(remote_ip))
-    |> put_change(:current_sign_in_at, DateTime.utc_now())
+    |> put_change(:current_sign_in_at, DateTime.utc_now() |> DateTime.truncate(:second))
   end
 end
