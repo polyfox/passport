@@ -108,7 +108,7 @@ defmodule Passport.SessionControllerTest do
     end
 
     test "will error if the account is locked", %{conn: conn} do
-      user = insert(:user, locked_at: DateTime.utc_now())
+      user = insert(:user, locked_at: DateTime.utc_now() |> DateTime.truncate(:second))
       conn = post conn, "/account/login", %{
         "email" => user.email,
         "password" => user.password

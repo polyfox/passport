@@ -57,7 +57,7 @@ defmodule Passport.Recoverable do
     changeset
     |> change()
     |> put_change(:reset_password_token, generate_reset_password_token())
-    |> put_change(:reset_password_sent_at, DateTime.utc_now())
+    |> put_change(:reset_password_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
   end
 
   def by_reset_password_token(query, token) do

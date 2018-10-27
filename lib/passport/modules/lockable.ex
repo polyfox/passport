@@ -30,7 +30,7 @@ defmodule Passport.Lockable do
       # we check if the failed_attempts as if (v + 1) here
       # since update_all wouldn't apply the changes to the changeset
       v when is_integer(v) and v >= 2 ->
-        put_change(changeset, :locked_at, DateTime.utc_now())
+        put_change(changeset, :locked_at, DateTime.utc_now() |> DateTime.truncate(:second))
       _ -> changeset
     end
   end

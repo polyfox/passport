@@ -47,13 +47,13 @@ defmodule Passport.Confirmable do
     changeset
     |> put_change(:confirmation_token, nil)
     |> put_change(:confirmation_sent_at, nil)
-    |> put_change(:confirmed_at, DateTime.utc_now())
+    |> put_change(:confirmed_at, DateTime.utc_now() |> DateTime.truncate(:second))
   end
 
   def new_confirmation(changeset) do
     changeset
     |> put_change(:confirmation_token, generate_confirmation_token())
-    |> put_change(:confirmation_sent_at, DateTime.utc_now())
+    |> put_change(:confirmation_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
   end
 
   def prepare_confirmation(changeset) do
