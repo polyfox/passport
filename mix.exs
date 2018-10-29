@@ -42,19 +42,20 @@ defmodule Passport.Mixfile do
   defp deps do
     [
       # Phoenix for testing
-      {:phoenix, "~> 1.3.0 or ~> 1.4.0"},
-      {:phoenix_pubsub, "~> 1.0"},
+      {:phoenix, "~> 1.4.0-rc.2", only: [:test]},
       {:phoenix_ecto, "~> 3.2", only: [:test]},
       {:phoenix_html, "~> 2.10", only: [:test]},
       {:gettext, "~> 0.11", only: [:test]},
-      {:cowboy, "~> 1.0", only: [:test]},
+      {:plug_cowboy, "~> 2.0", only: [:test]},
+      {:plug, "~> 1.7", only: [:test]},
       {:postgrex, ">= 0.0.0", only: [:test]},
       #
       {:bcrypt_elixir, "~> 1.0"},
       {:comeonin, "~> 4.0"},
       {:pot, "~> 0.9"},
-      {:ecto, "~> 2.2"},
-      {:poison, "~> 2.0 or ~> 3.0"},
+      {:ecto, "~> 3.0", override: true},
+      {:ecto_sql, "~> 3.0-rc.0"},
+      {:jason, "~> 1.1"},
       #
       {:ex_machina, "~> 2.0", git: "https://github.com/thoughtbot/ex_machina", only: :test},
     ]

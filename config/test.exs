@@ -15,7 +15,6 @@ config :passport, Passport.Support.Web.Endpoint,
 
 config :passport, ecto_repos: [Passport.Support.Repo]
 config :passport, Passport.Support.Repo,
-  adapter: Ecto.Adapters.Postgres,
   pool_size: 10,
   username: "postgres",
   password: "postgres",

@@ -1,7 +1,8 @@
 defmodule Passport.Support.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :passport
 
-  socket "/socket", Passport.Support.Web.UserSocket
+  socket "/socket", Passport.Support.Web.UserSocket,
+    websocket: true
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -25,7 +26,7 @@ defmodule Passport.Support.Web.Endpoint do
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
-    json_decoder: Poison
+    json_decoder: Jason
 
   plug Plug.MethodOverride
   plug Plug.Head
