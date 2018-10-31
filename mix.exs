@@ -47,7 +47,7 @@ defmodule Passport.Mixfile do
       {:phoenix_html, "~> 2.10", only: [:test]},
       {:gettext, "~> 0.11", only: [:test]},
       {:plug_cowboy, "~> 2.0", only: [:test]},
-      {:plug, "~> 1.7", only: [:test]},
+      {:plug, "~> 1.7"},
       {:postgrex, ">= 0.0.0", only: [:test]},
       #
       {:bcrypt_elixir, "~> 1.0"},
