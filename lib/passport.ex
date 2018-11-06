@@ -106,7 +106,7 @@ defmodule Passport do
     |> List.flatten()
   end
 
-  @spec find_by_confirmation_token(query :: term, token :: String.t) :: nil | term
+  @spec find_by_confirmation_token(query :: Ecto.Query.t | module, token :: String.t) :: nil | term
   def find_by_confirmation_token(_query, nil), do: nil
   def find_by_confirmation_token(query, token) do
     query
@@ -114,7 +114,7 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
-  @spec find_by_reset_password_token(query :: term, token :: String.t) :: nil | term
+  @spec find_by_reset_password_token(query :: Ecto.Query.t | module, token :: String.t) :: nil | term
   def find_by_reset_password_token(_query, nil), do: nil
   def find_by_reset_password_token(query, token) do
     query
@@ -213,7 +213,7 @@ defmodule Passport do
     end)
   end
 
-  @spec prepare_tfa_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  @spec prepare_tfa_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
   def prepare_tfa_confirmation(entity) do
     entity
     |> change()
@@ -221,7 +221,7 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec prepare_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  @spec prepare_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
   def prepare_confirmation(entity) do
     entity
     |> change()
@@ -229,7 +229,7 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec cancel_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  @spec cancel_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
   def cancel_confirmation(entity) do
     entity
     |> change()
@@ -237,7 +237,7 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec confirm_email(Ecto.Changeset.t | term) :: {:ok, term} | {:error, term}
+  @spec confirm_email(Ecto.Changeset.t | entity) :: {:ok, term} | {:error, term}
   def confirm_email(entity) do
     entity
     |> change()
@@ -251,7 +251,7 @@ defmodule Passport do
   * `params` - the parameters
   * `kind` - the kind of changes to apply
   """
-  @spec changeset(entity :: term, params :: map, :password_update | :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  @spec changeset(entity :: entity, params :: map, :password_update | :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
 
   def changeset(entity, params, :password_reset) do
@@ -293,7 +293,7 @@ defmodule Passport do
     |> changeset(params, :password_update)
   end
 
-  @spec prepare_reset_password(Ecto.Changeset.t | Recoverable.t) :: {:ok, term} | {:error, term}
+  @spec prepare_reset_password(Ecto.Changeset.t | entity) :: {:ok, term} | {:error, term}
   def prepare_reset_password(entity) do
     changeset = change(entity)
     changeset = if Config.features?(entity, :recoverable) do
@@ -307,7 +307,7 @@ defmodule Passport do
   @doc """
   Resets a user's password and clears any reset information
   """
-  @spec reset_password(term, params) :: {:ok, term} | {:error, term}
+  @spec reset_password(entity, params) :: {:ok, entity} | {:error, term}
   def reset_password(entity, params) do
     changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
@@ -335,7 +335,7 @@ defmodule Passport do
   * `password` - the new password
   * `password_confirmation` - the new password's confirmation
   """
-  @spec update_password(term, params) :: {:ok, term} | {:error, term}
+  @spec update_password(entity, params) :: {:ok, entity} | {:error, term}
   def update_password(entity, params) do
     entity
     |> changeset(params, :password_update)
@@ -355,7 +355,7 @@ defmodule Passport do
   * `password` - the new password
   * `password_confirmation` - the new password's confirmation
   """
-  @spec change_password(term, params) :: {:ok, term} | {:error, term}
+  @spec change_password(entity, params) :: {:ok, entity} | {:error, term}
   def change_password(entity, params) do
     entity
     |> changeset(params, :password_change)
@@ -368,7 +368,7 @@ defmodule Passport do
   Args:
   * `entity` - the user to clear
   """
-  @spec clear_reset_password(term) :: {:ok, term} | {:error, term}
+  @spec clear_reset_password(entity) :: {:ok, entity} | {:error, term}
   def clear_reset_password(entity) do
     if Config.features?(entity, :recoverable) do
       Recoverable.clear_reset_password(entity)
@@ -378,7 +378,7 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec on_successful_sign_in(term, remote_ip :: term) :: {:ok, term} | {:error, term}
+  @spec on_successful_sign_in(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def on_successful_sign_in(entity, remote_ip) do
     changeset = change(entity)
     changeset = if Config.features?(entity, :trackable) do
@@ -405,6 +405,7 @@ defmodule Passport do
   @doc """
   Clears all failed login attempts for the entity.
   """
+  @spec unlock_entity(entity) :: {:ok, entity} | {:error, term}
   def unlock_entity(entity) do
     changeset = change(entity)
     changeset = if Config.features?(entity, :lockable) do
@@ -418,7 +419,7 @@ defmodule Passport do
     Repo.primary().update(changeset)
   end
 
-  @spec check_authenticatable(term, String.t) :: {:ok, term} | {:error, term}
+  @spec check_authenticatable(entity, String.t) :: {:ok, entity} | {:error, term}
   def check_authenticatable(entity, password) do
     case Authenticatable.check_password(entity, password) do
       {:ok, entity} ->
