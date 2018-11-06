@@ -1,12 +1,14 @@
 defmodule Passport.APIHelper do
   alias Passport.Config
+  import Phoenix.Controller
   import Plug.Conn
 
   defp send_error(conn, status, name, assigns) do
     conn
     |> put_status(status)
-    |> Phoenix.Controller.render(Config.error_view(), name, assigns)
-    |> Plug.Conn.halt
+    |> put_view(Config.error_view())
+    |> Phoenix.Controller.render(name, assigns)
+    |> Plug.Conn.halt()
   end
 
   # 204

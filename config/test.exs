@@ -27,3 +27,5 @@ config :passport,
   replica_repo: Passport.Support.Repo
 
 config :logger, level: :warn
+
+config :phoenix, :json_library, Jason

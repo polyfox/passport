@@ -42,8 +42,7 @@ defmodule Passport.Mixfile do
   defp deps do
     [
       # Phoenix for testing
-      {:phoenix, "~> 1.4.0-rc.2", only: [:test]},
-      {:phoenix_ecto, "~> 3.2", only: [:test]},
+      {:phoenix, "~> 1.4.0-rc.3"},
       {:phoenix_html, "~> 2.10", only: [:test]},
       {:gettext, "~> 0.11", only: [:test]},
       {:plug_cowboy, "~> 2.0", only: [:test]},
@@ -57,7 +56,7 @@ defmodule Passport.Mixfile do
       {:ecto_sql, "~> 3.0"},
       {:jason, "~> 1.1"},
       #
-      {:ex_machina, "~> 2.2 and >= 2.2.2", only: :test},
+      {:ex_machina, "~> 2.2 and >= 2.2.2", only: [:test]},
     ]
   end
 end
