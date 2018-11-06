@@ -394,4 +394,6 @@ defmodule Passport do
       {:error, _} = err -> err
     end
   end
+
+  defdelegate authenticate_entity, to: Passport.Sessions
 end

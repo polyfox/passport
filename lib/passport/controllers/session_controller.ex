@@ -139,7 +139,7 @@ defmodule Passport.SessionController do
   def commit_entity_changes(entity), do: {:ok, entity}
 
   def create(controller, conn, params) do
-    with {:ok, entity} <- Passport.Sessions.authenticate_entity(params["email"], params["password"], determine_auth_code(params)),
+    with {:ok, entity} <- Passport.authenticate_entity(params["email"], params["password"], determine_auth_code(params)),
          {:ok, entity} <- commit_entity_changes(entity),
          {:ok, {token, entity}} <- try_create_session(controller, conn, entity),
          {:ok, entity} <- Passport.on_successful_sign_in(entity, conn.remote_ip) do
