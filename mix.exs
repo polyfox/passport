@@ -54,10 +54,10 @@ defmodule Passport.Mixfile do
       {:comeonin, "~> 4.0"},
       {:pot, "~> 0.9"},
       {:ecto, "~> 3.0", override: true},
-      {:ecto_sql, "~> 3.0-rc.0"},
+      {:ecto_sql, "~> 3.0"},
       {:jason, "~> 1.1"},
       #
-      {:ex_machina, "~> 2.0", git: "https://github.com/thoughtbot/ex_machina", only: :test},
+      {:ex_machina, "~> 2.2 and >= 2.2.2", only: :test},
     ]
   end
 end
