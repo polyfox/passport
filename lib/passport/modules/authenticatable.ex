@@ -64,6 +64,7 @@ defmodule Passport.Authenticatable do
     end
   end
 
+  @spec check_old_password(Ecto.Changeset.t) :: Ecto.Changeset.t
   def check_old_password(changeset) do
     case get_field(changeset, :old_password) do
       nil -> changeset
@@ -114,6 +115,9 @@ defmodule Passport.Authenticatable do
     |> validate_required([Config.password_hash_field(changeset)])
   end
 
+  @spec check_password(term, String.t | nil) ::
+    {:ok, term} |
+    {:error, :password_missing | :unauthorized | {:unauthorized, term}}
   def check_password(_user, nil) do
     dummy_checkpw()
     {:error, :password_missing}
@@ -124,11 +128,17 @@ defmodule Passport.Authenticatable do
     {:error, :unauthorized}
   end
 
-  def check_password(record, password) do
-    if checkpw(password, Map.get(record, Config.password_hash_field(record))) do
-      {:ok, record}
-    else
-      {:error, {:unauthorized, record}}
+  def check_password(record, password) when is_binary(password) do
+    case Map.fetch!(record, Config.password_hash_field(record)) do
+      nil ->
+        dummy_checkpw()
+        {:error, :unauthorized}
+      hashed_password ->
+        if checkpw(password, hashed_password) do
+          {:ok, record}
+        else
+          {:error, {:unauthorized, record}}
+        end
     end
   end
 end
