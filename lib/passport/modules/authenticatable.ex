@@ -47,7 +47,7 @@ defmodule Passport.Authenticatable do
       |> validate_length(:password, min: 8)
       |> validate_confirmation(:password, message: "does not match password")
 
-    password = get_change(changeset, :password)
+    password = get_field(changeset, :password)
     if password do
       changeset
       |> put_change(:password_changed, true)
@@ -72,10 +72,10 @@ defmodule Passport.Authenticatable do
         password_hash = get_field(changeset, password_hash_field)
         if checkpw(old_password, password_hash) do
           changeset
-          |> hash_password()
+          |> hash_password!()
           |> validate_required([password_hash_field])
         else
-          add_error(changeset, :old_password, "old password does not match")
+          add_error(changeset, :old_password, "does not match old password")
         end
     end
   end

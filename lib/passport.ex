@@ -395,5 +395,5 @@ defmodule Passport do
     end
   end
 
-  defdelegate authenticate_entity, to: Passport.Sessions
+  defdelegate authenticate_entity(identity, password, code \\ nil), to: Passport.Sessions
 end
