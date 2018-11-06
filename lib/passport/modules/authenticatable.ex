@@ -7,6 +7,8 @@ defmodule Passport.Authenticatable do
 
   import Ecto.Changeset
 
+  @type entity :: term
+
   defmacro schema_fields(_options \\ []) do
     quote do
       field Config.password_hash_field(__MODULE__), :string
@@ -115,10 +117,10 @@ defmodule Passport.Authenticatable do
     |> validate_required([Config.password_hash_field(changeset)])
   end
 
-  @spec check_password(term, String.t | nil) ::
-    {:ok, term} |
-    {:error, :password_missing | :unauthorized | {:unauthorized, term}}
-  def check_password(_user, nil) do
+  @spec check_password(entity, String.t | nil) ::
+    {:ok, entity} |
+    {:error, :password_missing | :unauthorized | {:unauthorized, entity}}
+  def check_password(_entity, nil) do
     dummy_checkpw()
     {:error, :password_missing}
   end
@@ -128,16 +130,16 @@ defmodule Passport.Authenticatable do
     {:error, :unauthorized}
   end
 
-  def check_password(record, password) when is_binary(password) do
-    case Map.fetch!(record, Config.password_hash_field(record)) do
+  def check_password(entity, password) when is_binary(password) do
+    case Map.fetch!(entity, Config.password_hash_field(entity)) do
       nil ->
         dummy_checkpw()
-        {:error, :unauthorized}
+        {:error, {:unauthorized, entity}}
       hashed_password ->
         if checkpw(password, hashed_password) do
-          {:ok, record}
+          {:ok, entity}
         else
-          {:error, {:unauthorized, record}}
+          {:error, {:unauthorized, entity}}
         end
     end
   end
