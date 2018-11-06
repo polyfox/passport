@@ -22,6 +22,7 @@ defmodule Passport.Support.Web.ConnCase do
       import Passport.Support.Web.Router.Helpers
       import Passport.Support.Factory
       import Passport.Support.Helpers
+      import Passport.Support.DataCase
       require Passport.Repo
 
       # The default endpoint for testing

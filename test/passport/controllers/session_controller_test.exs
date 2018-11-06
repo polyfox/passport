@@ -72,9 +72,8 @@ defmodule Passport.SessionControllerTest do
       }
 
       assert json_response(conn, 401)
-
-      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
-
+      user = reload_record(user)
+      assert 1 == user.tfa_attempts_count
       assert old_tokens == user.tfa_recovery_tokens
     end
 
@@ -102,6 +101,8 @@ defmodule Passport.SessionControllerTest do
       }
 
       data = json_response(conn, 401)
+      user = reload_record(user)
+      assert 1 == user.failed_attempts
 
       assert data["errors"]
       assert [%{"code" => "unauthorized", "detail" => "Invalid email or password.", "status" => "401", "title" => "Unauthorized"}] == data["errors"]

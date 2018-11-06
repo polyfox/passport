@@ -5,7 +5,7 @@ defmodule Passport.Lockable do
   defmacro schema_fields(_options \\ []) do
     quote do
       field :failed_attempts, :integer, default: 0
-      field :locked_at, :utc_datetime
+      field :locked_at, :utc_datetime_usec
       field :lock_changed, :boolean, virtual: true, default: false
     end
   end
@@ -25,33 +25,30 @@ defmodule Passport.Lockable do
 
   def migration_indices(_mod), do: []
 
-  defp perform_lock(changeset) do
-    case get_field(changeset, :failed_attempts) do
-      # we check if the failed_attempts as if (v + 1) here
-      # since update_all wouldn't apply the changes to the changeset
-      v when is_integer(v) and v >= 2 ->
-        put_change(changeset, :locked_at, DateTime.utc_now() |> DateTime.truncate(:second))
-      _ -> changeset
+  @spec track_failed_attempts(Ecto.Query.t | module, String.t) :: Ecto.Query.t
+  def track_failed_attempts(query, _remote_ip) do
+    query
+    |> update(inc: [failed_attempts: 1])
+  end
+
+  @spec try_lock(Ecto.Query.t | module, non_neg_integer, atom) :: {boolean, Ecto.Query.t}
+  def try_lock(query, failed_attenmpts, _reason) do
+    if failed_attenmpts > 2 do
+      now = DateTime.utc_now()
+      {true, update(query, [u], set: [locked_at: ^now])}
+    else
+      {false, query}
     end
   end
 
-  def track_failed_attempts(changeset, _remote_ip) do
-    changeset
-    |> prepare_changes(fn cs ->
-      id = cs.data.id
-      cs.data.__struct__
-      |> where(id: ^id)
-      |> cs.repo.update_all(inc: [failed_attempts: 1])
-      cs
-    end)
-    |> perform_lock
-  end
-
+  @spec clear_failed_attempts(Ecto.Changeset.t) :: Ecto.Changeset.t
   def clear_failed_attempts(changeset) do
     changeset
+    |> change()
     |> put_change(:failed_attempts, 0)
   end
 
+  @spec unlock_changeset(Ecto.Changeset.t) :: Ecto.Changeset.t
   def unlock_changeset(changeset) do
     changeset
     |> put_change(:locked_at, nil)

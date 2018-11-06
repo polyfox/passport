@@ -15,6 +15,7 @@ defmodule Passport do
   }
 
   import Ecto.Changeset
+  import Ecto.Query
 
   @type params :: map
   @type entity :: term
@@ -153,26 +154,63 @@ defmodule Passport do
     end
   end
 
-  @spec track_failed_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
+  @spec track_failed_attempts(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def track_failed_attempts(entity, remote_ip) do
-    entity
-    |> change()
-    |> Lockable.track_failed_attempts(remote_ip)
-    # because track_failed_attempts uses a prepare_changes, ecto believes the
-    # entity has not changed and will not execute the update
-    # force: true, here ensures that the prepare_changes is ran
-    |> Repo.primary().update(force: true)
+    Repo.primary().transaction(fn ->
+      entity_id = entity.id
+
+      scope =
+        entity.__struct__
+        |> where(id: ^entity_id)
+
+      {1, [failed_attempts]} =
+        scope
+        |> select([e], e.failed_attempts)
+        |> Lockable.track_failed_attempts(remote_ip)
+        |> Repo.primary().update_all([])
+
+      {1, [entity2]} =
+        scope
+        |> select([e], e)
+        |> Lockable.try_lock(failed_attempts, :authenticate)
+        |> case do
+          {true, query} ->
+            Repo.primary().update_all(query, [])
+          {false, _} ->
+            {1, [Repo.primary().one(scope)]}
+        end
+      entity2
+    end)
   end
 
-  @spec track_tfa_attempts(term, remote_ip :: term) :: {:ok, term} | {:error, term}
+  @spec track_tfa_attempts(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def track_tfa_attempts(entity, remote_ip) do
-    entity
-    |> change()
-    |> TwoFactorAuth.track_tfa_attempts(remote_ip)
-    # because track_failed_attempts uses a prepare_changes, ecto believes the
-    # entity has not changed and will not execute the update,
-    # force: true, here ensures that the prepare_changes is ran
-    |> Repo.primary().update(force: true)
+    Repo.primary().transaction(fn ->
+      entity_id = entity.id
+
+      scope =
+        entity.__struct__
+        |> where(id: ^entity_id)
+
+      {1, [tfa_attempts_count]} =
+        scope
+        |> select([e], e.tfa_attempts_count)
+        |> TwoFactorAuth.track_tfa_attempts(remote_ip)
+        |> Repo.primary().update_all([])
+
+      {1, [entity2]} =
+        scope
+        |> select([e], e)
+        |> Lockable.try_lock(tfa_attempts_count, :tfa)
+        |> case do
+          {true, query} ->
+            Repo.primary().update_all(query, [])
+          {false, _} ->
+            {1, [Repo.primary().one(scope)]}
+        end
+
+      entity2
+    end)
   end
 
   @spec prepare_tfa_confirmation(term) :: {:ok, term} | {:error, Ecto.Changeset.t | term}

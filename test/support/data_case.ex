@@ -1,3 +1,5 @@
+require Passport.Repo
+
 defmodule Passport.Support.DataCase do
   @moduledoc """
   This module defines the setup for tests requiring
@@ -50,5 +52,10 @@ defmodule Passport.Support.DataCase do
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)
+  end
+
+  @spec reload_record(term) :: term
+  def reload_record(%module{id: id}) do
+    Passport.Repo.replica().get(module, id)
   end
 end

@@ -153,16 +153,10 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
-  def track_tfa_attempts(changeset, _remote_ip) do
-    changeset
-    |> prepare_changes(fn cs ->
-      id = cs.data.id
-      cs.data.__struct__
-      |> where(id: ^id)
-      |> cs.repo.update_all(inc: [tfa_attempts_count: 1])
-      cs
-    end)
-    # TODO: set locked_at if tfa_attempts_count exceeds a configured limit
+  @spec track_tfa_attempts(Ecto.Query.t | module, String.t) :: Ecto.Query.t
+  def track_tfa_attempts(query, _remote_ip) do
+    query
+    |> update(inc: [tfa_attempts_count: 1])
   end
 
   def clear_tfa_attempts(changeset) do
