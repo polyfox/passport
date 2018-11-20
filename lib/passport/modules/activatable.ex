@@ -38,8 +38,11 @@ defmodule Passport.Activatable do
   """
   @spec changeset(term, map) :: Ecto.Changeset.t
   def changeset(record, params) do
-    record
-    |> cast(params, [:active])
+    if Passport.Config.activatable_is_flag(record) do
+      cast(record, params, [:active])
+    else
+      cast(record, params, [:activated_at])
+    end
   end
 
   @spec activate(term) :: Ecto.Changeset.t
