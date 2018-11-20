@@ -9,21 +9,21 @@ defmodule Passport.Support.Repo.Migrations.AddPassportFieldsToPassportSupportUse
       add :password_hash, :string, null: false
       # Confirmable
       add :confirmation_token, :string
-      add :confirmed_at, :utc_datetime
-      add :confirmation_sent_at, :utc_datetime
+      add :confirmed_at, :utc_datetime_usec
+      add :confirmation_sent_at, :utc_datetime_usec
       # Lockable
       add :failed_attempts, :integer, default: 0
-      add :locked_at, :utc_datetime
+      add :locked_at, :utc_datetime_usec
       # Recoverable
       add :reset_password_token, :string
-      add :reset_password_sent_at, :utc_datetime
+      add :reset_password_sent_at, :utc_datetime_usec
       # Rememberable
-      add :remember_created_at, :utc_datetime
+      add :remember_created_at, :utc_datetime_usec
       # Trackable
       add :sign_in_count, :integer, default: 0
-      add :current_sign_in_at, :utc_datetime
+      add :current_sign_in_at, :utc_datetime_usec
       add :current_sign_in_ip, :string
-      add :last_sign_in_at, :utc_datetime
+      add :last_sign_in_at, :utc_datetime_usec
       add :last_sign_in_ip, :string
       # TwoFactorAuth
       add :tfa_otp_secret_key, :string

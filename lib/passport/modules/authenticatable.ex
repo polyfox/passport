@@ -12,10 +12,10 @@ defmodule Passport.Authenticatable do
   defmacro schema_fields(_options \\ []) do
     quote do
       field Config.password_hash_field(__MODULE__), :string
-      field :old_password, :string, virtual: true
-      field :password, :string, virtual: true
+      field :old_password,          :string, virtual: true
+      field :password,              :string, virtual: true
       field :password_confirmation, :string, virtual: true
-      field :password_changed, :boolean, virtual: true
+      field :password_changed,      :boolean, virtual: true, default: false
     end
   end
 

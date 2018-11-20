@@ -6,9 +6,9 @@ defmodule Passport.TwoFactorAuth do
 
   defmacro schema_fields(_opts \\ []) do
     quote do
-      field :tfa_otp_secret_key, :string
-      field :tfa_enabled, :boolean, default: false
-      field :tfa_attempts_count, :integer, default: 0
+      field :tfa_otp_secret_key,  :string
+      field :tfa_enabled,         :boolean, default: false
+      field :tfa_attempts_count,  :integer, default: 0
       field :tfa_recovery_tokens, {:array, :string}, default: []
     end
   end
@@ -24,9 +24,9 @@ defmodule Passport.TwoFactorAuth do
   def migration_fields(_mod) do
     [
       "# TwoFactorAuth",
-      "add :tfa_otp_secret_key, :string",
-      "add :tfa_enabled, :boolean",
-      "add :tfa_attempts_count, :integer, default: 0",
+      "add :tfa_otp_secret_key,  :string",
+      "add :tfa_enabled,         :boolean",
+      "add :tfa_attempts_count,  :integer, default: 0",
       "add :tfa_recovery_tokens, {:array, :string}, default: []",
     ]
   end

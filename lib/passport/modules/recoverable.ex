@@ -6,10 +6,11 @@ defmodule Passport.Recoverable do
   # for now
   @type t :: term
 
-  defmacro schema_fields(_opts \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
-      field :reset_password_token, :string
-      field :reset_password_sent_at, :utc_datetime
+      field :reset_password_token,   :string
+      field :reset_password_sent_at, unquote(timestamp_type)
     end
   end
 
@@ -30,8 +31,8 @@ defmodule Passport.Recoverable do
   def migration_fields(_mod) do
     [
       "# Recoverable",
-      "add :reset_password_token, :string",
-      "add :reset_password_sent_at, :utc_datetime",
+      "add :reset_password_token,   :string",
+      "add :reset_password_sent_at, :utc_datetime_usec",
     ]
   end
 
@@ -57,7 +58,7 @@ defmodule Passport.Recoverable do
     changeset
     |> change()
     |> put_change(:reset_password_token, generate_reset_password_token())
-    |> put_change(:reset_password_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:reset_password_sent_at, DateTime.utc_now())
   end
 
   def by_reset_password_token(query, token) do

@@ -4,12 +4,13 @@ defmodule Passport.Activatable do
   """
   import Ecto.Changeset
 
-  defmacro schema_fields(_options \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
       if Passport.Config.activatable_is_flag(__MODULE__) do
         field :active, :boolean, default: true
       else
-        field :activated_at, :utc_datetime
+        field :activated_at, unquote(timestamp_type)
       end
     end
   end
@@ -25,7 +26,7 @@ defmodule Passport.Activatable do
       if Passport.Config.activatable_is_flag(mod) do
         "add :active, :boolean, default: true"
       else
-        "add :activated_at, :utc_datetime"
+        "add :activated_at, :utc_datetime_usec"
       end,
     ]
   end

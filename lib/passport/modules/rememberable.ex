@@ -1,7 +1,8 @@
 defmodule Passport.Rememberable do
-  defmacro schema_fields(_opts \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
-      field :remember_created_at, :utc_datetime
+      field :remember_created_at, unquote(timestamp_type)
     end
   end
 
@@ -13,7 +14,7 @@ defmodule Passport.Rememberable do
   def migration_fields(_mod) do
     [
       "# Rememberable",
-      "add :remember_created_at, :utc_datetime",
+      "add :remember_created_at, :utc_datetime_usec",
     ]
   end
 

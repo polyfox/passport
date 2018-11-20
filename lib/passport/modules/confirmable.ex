@@ -2,11 +2,12 @@ defmodule Passport.Confirmable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields(_options \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
-      field :confirmation_token, :string
-      field :confirmed_at, :utc_datetime
-      field :confirmation_sent_at, :utc_datetime
+      field :confirmation_token,   :string
+      field :confirmed_at,         unquote(timestamp_type)
+      field :confirmation_sent_at, unquote(timestamp_type)
     end
   end
 
@@ -24,9 +25,9 @@ defmodule Passport.Confirmable do
   def migration_fields(_mod) do
     [
       "# Confirmable",
-      "add :confirmation_token, :string",
-      "add :confirmed_at, :utc_datetime",
-      "add :confirmation_sent_at, :utc_datetime",
+      "add :confirmation_token,   :string",
+      "add :confirmed_at,         :utc_datetime_usec",
+      "add :confirmation_sent_at, :utc_datetime_usec",
     ]
   end
 

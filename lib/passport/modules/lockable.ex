@@ -2,11 +2,12 @@ defmodule Passport.Lockable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields(_options \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
       field :failed_attempts, :integer, default: 0
-      field :locked_at, :utc_datetime_usec
-      field :lock_changed, :boolean, virtual: true, default: false
+      field :locked_at,       unquote(timestamp_type)
+      field :lock_changed,    :boolean, virtual: true, default: false
     end
   end
 
@@ -19,7 +20,7 @@ defmodule Passport.Lockable do
     [
       "# Lockable",
       "add :failed_attempts, :integer, default: 0",
-      "add :locked_at, :utc_datetime",
+      "add :locked_at,       :utc_datetime_usec",
     ]
   end
 

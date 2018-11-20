@@ -3,7 +3,7 @@ defmodule Passport.Support.Repo.Migrations.AddUsersTable do
 
   def change do
     create table(:users) do
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
 
       add :email, :string, null: false
       add :username, :string, null: false
