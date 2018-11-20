@@ -21,7 +21,7 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 ## Modules
 
-* Activatable `:activatable`
+* Activatable `activatable`
 * Authenticatable `authenticatable`
 * Confirmable `confirmable`
 * Lockable `lockable`
@@ -43,6 +43,7 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 | Name       | Type | Description |
 | ---------- | ---- | ----------- |
+| `old_password` | `string` | `virtual` |
 | `password` | `string` |  `virtual` |
 | `password_confirmation` | `string` | `virtual` |
 | `password_changed` | `boolean` | `virtual` Was the password changed in the latest update? |
