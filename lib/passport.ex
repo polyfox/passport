@@ -221,11 +221,11 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec prepare_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
-  def prepare_confirmation(entity) do
+  @spec prepare_confirmation(entity, map) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def prepare_confirmation(entity, params \\ %{}) do
     entity
     |> change()
-    |> Confirmable.prepare_confirmation()
+    |> Confirmable.prepare_confirmation(params)
     |> Repo.primary().update()
   end
 
@@ -237,11 +237,11 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec confirm_email(Ecto.Changeset.t | entity) :: {:ok, term} | {:error, term}
-  def confirm_email(entity) do
+  @spec confirm_email(Ecto.Changeset.t | entity, map) :: {:ok, term} | {:error, term}
+  def confirm_email(entity, params \\ %{}) do
     entity
     |> change()
-    |> Confirmable.confirm()
+    |> Confirmable.confirm(params)
     |> Repo.primary().update()
   end
 
@@ -312,7 +312,7 @@ defmodule Passport do
     changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
     if Config.features?(entity, :confirmable) do
-      Confirmable.confirm(changeset)
+      Confirmable.confirm(changeset, params)
     else
       changeset
     end

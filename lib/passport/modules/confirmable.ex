@@ -43,22 +43,25 @@ defmodule Passport.Confirmable do
     Keygen.random_string(128)
   end
 
-  def confirm(changeset) do
+  def confirm(changeset, params \\ %{}) do
+    confirmed_at = params[:confirmed_at] || DateTime.utc_now()
     changeset
     |> put_change(:confirmation_token, nil)
     |> put_change(:confirmation_sent_at, nil)
-    |> put_change(:confirmed_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:confirmed_at, confirmed_at)
   end
 
-  def new_confirmation(changeset) do
+  def new_confirmation(changeset, params \\ %{}) do
+    confirmation_token = params[:confirmation_token] || generate_confirmation_token()
+    confirmation_sent_at = params[:confirmation_sent_at] || DateTime.utc_now()
     changeset
-    |> put_change(:confirmation_token, generate_confirmation_token())
-    |> put_change(:confirmation_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:confirmation_token, confirmation_token)
+    |> put_change(:confirmation_sent_at, confirmation_sent_at)
   end
 
-  def prepare_confirmation(changeset) do
+  def prepare_confirmation(changeset, params \\ %{}) do
     changeset
-    |> new_confirmation()
+    |> new_confirmation(params)
     |> put_change(:confirmed_at, nil)
   end
 
