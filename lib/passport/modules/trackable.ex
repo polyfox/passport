@@ -31,6 +31,7 @@ defmodule Passport.Trackable do
   def migration_indices(_mod), do: []
 
   @spec format_remote_ip(tuple) :: String.t
+  def format_remote_ip(nil), do: nil
   def format_remote_ip(tup) do
     tup
     |> :inet_parse.ntoa()
