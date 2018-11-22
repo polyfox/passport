@@ -54,4 +54,9 @@ defmodule Passport.Lockable do
     changeset
     |> put_change(:locked_at, nil)
   end
+
+  @spec locked?(term) :: boolean
+  def locked?(entity) do
+    !!entity.locked_at
+  end
 end

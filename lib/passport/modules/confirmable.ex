@@ -75,4 +75,9 @@ defmodule Passport.Confirmable do
   def by_confirmation_token(query, token) do
     where(query, confirmation_token: ^token)
   end
+
+  @spec confirmed?(term) :: boolean
+  def confirmed?(entity) do
+    !!entity.confirmed_at
+  end
 end

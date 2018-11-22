@@ -130,25 +130,28 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
+  @spec entity_activated?(term) :: boolean
   def entity_activated?(entity) do
     if Config.features?(entity, :activatable) do
-      entity.active
+      Activatable.activated?(entity)
     else
       true
     end
   end
 
+  @spec entity_confirmed?(term) :: boolean
   def entity_confirmed?(entity) do
     if Config.features?(entity, :confirmable) do
-      !!entity.confirmed_at
+      Confirmable.confirmed?(entity)
     else
       true
     end
   end
 
+  @spec entity_locked?(term) :: boolean
   def entity_locked?(entity) do
     if Config.features?(entity, :lockable) do
-      !!entity.locked_at
+      Lockable.locked?(entity)
     else
       false
     end

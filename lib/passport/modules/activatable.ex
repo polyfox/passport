@@ -33,25 +33,38 @@ defmodule Passport.Activatable do
 
   def migration_indices(_mod), do: []
 
+  defp activatable_is_flag?(record) do
+    Passport.Config.activatable_is_flag(record)
+  end
+
   @doc """
   Changeset for modifying the active state of the record
   """
   @spec changeset(term, map) :: Ecto.Changeset.t
-  def changeset(record, params) do
-    if Passport.Config.activatable_is_flag(record) do
-      cast(record, params, [:active])
+  def changeset(entity, params) do
+    if activatable_is_flag?(entity) do
+      cast(entity, params, [:active])
     else
-      cast(record, params, [:activated_at])
+      cast(entity, params, [:activated_at])
     end
   end
 
   @spec activate(term) :: Ecto.Changeset.t
-  def activate(record) do
-    changeset(record, %{active: true})
+  def activate(entity) do
+    changeset(entity, %{active: true})
   end
 
   @spec deactivate(term) :: Ecto.Changeset.t
-  def deactivate(record) do
-    changeset(record, %{active: false})
+  def deactivate(entity) do
+    changeset(entity, %{active: false})
+  end
+
+  @spec activated?(term) :: boolean
+  def activated?(entity) do
+    if activatable_is_flag?(entity) do
+      entity.active
+    else
+      !!entity.activated_at
+    end
   end
 end
