@@ -54,11 +54,13 @@ defmodule Passport.Recoverable do
     |> put_change(:reset_password_sent_at, nil)
   end
 
-  def prepare_reset_password(changeset) do
+  def prepare_reset_password(changeset, params \\ %{}) do
+    reset_password_sent_at = params[:reset_password_sent_at] ||
+      Passport.Util.generate_timestamp_for(changeset, :reset_password_sent_at)
     changeset
     |> change()
     |> put_change(:reset_password_token, generate_reset_password_token())
-    |> put_change(:reset_password_sent_at, DateTime.utc_now())
+    |> put_change(:reset_password_sent_at, reset_password_sent_at)
   end
 
   def by_reset_password_token(query, token) do

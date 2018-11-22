@@ -6,7 +6,8 @@ defmodule Passport.Config do
   def module_for(nil), do: nil
   def module_for(atom) when is_atom(atom), do: atom
   def module_for(%Ecto.Changeset{data: data}), do: module_for(data)
-  def module_for(%{__struct__: st}), do: st
+  def module_for(%Ecto.Query{from: %{source: {_table, module}}}), do: module_for(module)
+  def module_for(%st{}), do: st
 
   def get_env(namespace, name, default \\ nil) do
     ns = module_for(namespace)

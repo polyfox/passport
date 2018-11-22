@@ -35,7 +35,7 @@ defmodule Passport.Lockable do
   @spec try_lock(Ecto.Query.t | module, non_neg_integer, atom) :: {boolean, Ecto.Query.t}
   def try_lock(query, failed_attenmpts, _reason) do
     if failed_attenmpts > 2 do
-      now = DateTime.utc_now()
+      now = Passport.Util.generate_timestamp_for(query, :locked_at)
       {true, update(query, [u], set: [locked_at: ^now])}
     else
       {false, query}
