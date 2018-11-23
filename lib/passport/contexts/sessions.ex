@@ -84,13 +84,22 @@ defmodule Passport.Sessions do
     end
   end
 
-  def extract_password(params) do
-    params["password"]
+  @type entity :: term
+
+  @doc """
+  Utility function for extracting passwords from given parameters
+  """
+  @spec extract_password(map) :: String.t | nil
+  def extract_password(params) when is_map(params) do
+    params["password"] || params[:password]
   end
 
-  def extract_auth_code(params) do
+  @spec extract_auth_code(map) :: {:otp, String.t} | {:recovery_token, String.t} | nil
+  def extract_auth_code(params) when is_map(params) do
     cond do
+      params[:otp] -> {:otp, params[:otp]}
       params["otp"] -> {:otp, params["otp"]}
+      params[:recovery_token] -> {:recovery_token, params[:recovery_token]}
       params["recovery_token"] -> {:recovery_token, params["recovery_token"]}
       true -> nil
     end
@@ -102,13 +111,21 @@ defmodule Passport.Sessions do
     sessions_client.find_entity_by_identity(identity)
   end
 
-  def basic_authenticate_entity(identity, params) do
+  @doc """
+  Authenticates the user using their identity and password ONLY.
+
+  This should only be used for validating a password, if you wish to perform a
+  full authentication, please use `authenticate_entity/2` instead
+  """
+  @spec basic_authenticate_entity(String.t, map) :: {:ok, entity} | {:error, term}
+  def basic_authenticate_entity(identity, params) when is_map(params) do
     sessions_client = Config.sessions_client()
     identity
     |> find_entity_by_identity()
     |> sessions_client.check_authentication(params)
   end
 
+  @spec check_auth_code(entity, {:otp, String.t} | {:recovery_token, String.t}) :: {:ok, entity} | {:error, term}
   def check_auth_code(entity, auth_code) do
     if entity.tfa_otp_secret_key do
       case auth_code do
@@ -127,7 +144,10 @@ defmodule Passport.Sessions do
     end
   end
 
-  @spec authenticate_entity(String.t, map) :: {:ok, term} | {:error, term}
+  @doc """
+  Authenticates an entity without creating any new sessions, this will also handle TFA.
+  """
+  @spec authenticate_entity(String.t, map) :: {:ok, entity} | {:error, term}
   def authenticate_entity(identity, params \\ %{})
   def authenticate_entity(nil, _params), do: {:error, {:missing, :identity}}
   def authenticate_entity(identity, params) do
@@ -147,7 +167,7 @@ defmodule Passport.Sessions do
   @doc """
   Variation of authenticate_entity specifically for TFA auth, this will force the use of an OTP code.
   """
-  @spec authenticate_entity_tfa(String.t, map) :: {:ok, term} | {:error, term}
+  @spec authenticate_entity_tfa(String.t, map) :: {:ok, entity} | {:error, term}
   def authenticate_entity_tfa(identity, params \\ %{})
   def authenticate_entity_tfa(nil, _params), do: {:error, {:missing, :identity}}
   def authenticate_entity_tfa(identity, params) do
@@ -170,7 +190,7 @@ defmodule Passport.Sessions do
   @doc """
   Creates a new session from the given entity.
   """
-  @spec create_session(term, map) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  @spec create_session(term, map) :: {:ok, {token :: String.t, entity}} | {:error, term}
   def create_session(entity, params) do
     Config.sessions_client().create_session(entity, params)
   end
@@ -182,7 +202,7 @@ defmodule Passport.Sessions do
   * `identity` - a unique value such as a username or email to identify the entity
   * `params` - a map containing additional details, such as password, otp or extras
   """
-  @spec authenticate_session(identity :: String.t, params :: map) :: {:ok, {token :: String.t, entity :: term}} | {:error, term}
+  @spec authenticate_session(identity :: String.t, params :: map) :: {:ok, {token :: String.t, entity}} | {:error, term}
   def authenticate_session(identity, params \\ %{})
   def authenticate_session(nil, _params), do: {:error, {:missing, :identity}}
   def authenticate_session(identity, params) do
