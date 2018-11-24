@@ -254,8 +254,17 @@ defmodule Passport do
   * `params` - the parameters
   * `kind` - the kind of changes to apply
   """
-  @spec changeset(entity :: entity, params :: map, :password_update | :password_reset | :password_change | :update) :: Ecto.Changeset.t
+  @spec changeset(entity :: entity, params :: map, :activation | :password_update | :password_reset | :password_change | :update) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
+
+  def changeset(entity, params, :activation) do
+    changeset = entity
+    if Config.features?(entity, :activatable) do
+      Activatable.changeset(changeset, params)
+    else
+      changeset
+    end
+  end
 
   def changeset(entity, params, :password_reset) do
     changeset = if Config.features?(entity, :authenticatable) do

@@ -51,12 +51,17 @@ defmodule Passport.Activatable do
 
   @spec activate(term) :: Ecto.Changeset.t
   def activate(entity) do
-    changeset(entity, %{active: true})
+    if activatable_is_flag?(entity) do
+      changeset(entity, %{active: true})
+    else
+      activated_at = Passport.Util.generate_timestamp_for(entity, :activated_at)
+      changeset(entity, %{activated_at: activated_at})
+    end
   end
 
   @spec deactivate(term) :: Ecto.Changeset.t
   def deactivate(entity) do
-    changeset(entity, %{active: false})
+    changeset(entity, %{active: false, activated_at: nil})
   end
 
   @spec activated?(term) :: boolean
