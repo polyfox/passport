@@ -9,7 +9,35 @@ defmodule Passport.Config do
   def module_for(%Ecto.Query{from: %{source: {_table, module}}}), do: module_for(module)
   def module_for(%st{}), do: st
 
-  def get_env(namespace, name, default \\ nil) do
+  @doc """
+  Retrieves a passport configured value given a namespace and name.
+
+  Passport will first lookup the config as:
+    config :passport, namespace, [name: value]
+
+  If nothing is configured for the namespace, it will look at the root config instead.
+
+    config :passport, name: value
+
+  Example:
+
+  Configuring the reset_password_length for users and leaving a default for anything else.
+
+    config :passport, reset_password_length: 60
+    config :passport, User, reset_password_length: 120
+
+  get_env(User, :reset_password_length) would return 120
+
+  While:
+
+  get_env(nil, :reset_password_length) would return 60
+  """
+  @spec get_env(term | nil, atom, term) :: term
+  def get_env(namespace, name, default \\ nil)
+  def get_env(nil, name, default) do
+    Application.get_env(:passport, name, default)
+  end
+  def get_env(namespace, name, default) do
     ns = module_for(namespace)
     case Application.get_env(:passport, ns) do
       nil -> Application.get_env(:passport, name, default)
@@ -23,6 +51,8 @@ defmodule Passport.Config do
     {:activatable_is_flag, true},
     {:otp_header_name, "x-passport-otp"},
     {:tfa_recovery_token_count, 10},
+    {:reset_password_token_length, 120},
+    {:confirmation_token_length, 120},
   ]
   |> Enum.each(fn {name, default} ->
     def unquote(name)(namespace \\ nil) do

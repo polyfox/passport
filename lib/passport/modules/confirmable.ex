@@ -40,8 +40,9 @@ defmodule Passport.Confirmable do
 
   alias Passport.Keygen
 
-  def generate_confirmation_token do
-    Keygen.random_string(128)
+  @spec generate_confirmation_token(term) :: String.t
+  def generate_confirmation_token(object \\ nil) do
+    Keygen.random_string(Passport.Config.confirmation_token_length(object))
   end
 
   def confirm(changeset, params \\ %{}) do
@@ -53,7 +54,7 @@ defmodule Passport.Confirmable do
   end
 
   def new_confirmation(changeset, params \\ %{}) do
-    confirmation_token = params[:confirmation_token] || generate_confirmation_token()
+    confirmation_token = params[:confirmation_token] || generate_confirmation_token(changeset)
     confirmation_sent_at = params[:confirmation_sent_at] || Passport.Util.generate_timestamp_for(changeset, :confirmation_sent_at)
     changeset
     |> put_change(:confirmation_token, confirmation_token)
