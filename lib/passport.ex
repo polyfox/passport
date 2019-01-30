@@ -52,6 +52,10 @@ defmodule Passport do
         @passport_enabled_features
       end
 
+      @doc """
+      Is the specified passport feature available?
+      """
+      @spec passport_feature?(atom) :: boolean
       def passport_feature?(feature) do
         Enum.member?(passport_enabled_features(), feature)
       end
@@ -90,7 +94,8 @@ defmodule Passport do
     end
   end
 
-  def migration_fields(user_mod) do
+  @spec migration_fields(String.t | atom) :: iolist
+  def migration_fields(user_mod) when is_atom(user_mod) or is_binary(user_mod) do
     @feature_map
     |> Enum.map(fn {_, mod} ->
       mod.migration_fields(user_mod)
@@ -98,7 +103,8 @@ defmodule Passport do
     |> List.flatten()
   end
 
-  def migration_indices(user_mod) do
+  @spec migration_indices(String.t | atom) :: iolist
+  def migration_indices(user_mod) when is_atom(user_mod) or is_binary(user_mod) do
     @feature_map
     |> Enum.map(fn {_, mod} ->
       mod.migration_indices(user_mod)

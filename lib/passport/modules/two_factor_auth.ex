@@ -6,6 +6,7 @@ defmodule Passport.TwoFactorAuth do
 
   defmacro schema_fields(_opts \\ []) do
     quote do
+      field :unconfirmed_tfa_otp_secret_key, :string
       field :tfa_otp_secret_key,  :string
       field :tfa_enabled,         :boolean, default: false
       field :tfa_attempts_count,  :integer, default: 0
@@ -21,16 +22,19 @@ defmodule Passport.TwoFactorAuth do
     end
   end
 
+  @spec migration_fields(module) :: iolist
   def migration_fields(_mod) do
     [
       "# TwoFactorAuth",
-      "add :tfa_otp_secret_key,  :string",
-      "add :tfa_enabled,         :boolean",
-      "add :tfa_attempts_count,  :integer, default: 0",
-      "add :tfa_recovery_tokens, {:array, :string}, default: []",
+      "add :unconfirmed_tfa_otp_secret_key, :string",
+      "add :tfa_otp_secret_key,             :string",
+      "add :tfa_enabled,                    :boolean",
+      "add :tfa_attempts_count,             :integer, default: 0",
+      "add :tfa_recovery_tokens,            {:array, :string}, default: []",
     ]
   end
 
+  @spec migration_indices(module) :: iolist
   def migration_indices(_mod) do
     # <users> will be replaced with the correct table name
     [
@@ -57,11 +61,11 @@ defmodule Passport.TwoFactorAuth do
     generate_tfa_recovery_tokens(count - 1, [generate_tfa_recovery_token() | acc])
   end
 
-  defp patch_tfa_otp_secret_key(changeset) do
-    case get_field(changeset, :tfa_otp_secret_key) do
+  defp patch_otp_secret_key(changeset, key \\ :tfa_otp_secret_key) do
+    case get_field(changeset, key) do
       nil ->
         secret = generate_secret_key()
-        put_change(changeset, :tfa_otp_secret_key, secret)
+        put_change(changeset, key, secret)
       _ -> changeset
     end
   end
@@ -74,17 +78,18 @@ defmodule Passport.TwoFactorAuth do
   end
 
   @doc """
-  Initializes a new otp secret key for the specified account.
+  Initializes the entity's unconfirmed_tfa_otp_secret_key, once the tfa has been confirmed the active
+  tfa_otp_secret_key will be replaced by it.
   """
   @spec prepare_tfa_confirmation(Ecto.Changeset.t | atom) :: Ecto.Changeset.t
   def prepare_tfa_confirmation(changeset) do
     changeset
-    |> put_change(:tfa_otp_secret_key, nil)
-    |> patch_tfa_otp_secret_key()
+    |> put_change(:unconfirmed_tfa_otp_secret_key, nil)
+    |> patch_otp_secret_key(:unconfirmed_tfa_otp_secret_key)
   end
 
   @doc """
-  Initializes a new list tfa_recovery_tokens on the given entity or changeset.
+  Initializes a new list of tfa_recovery_tokens on the given entity or changeset.
   """
   @spec prepare_tfa_recovery_tokens(Ecto.Changeset.t) :: Ecto.Changeset.t
   def prepare_tfa_recovery_tokens(changeset) do
@@ -93,9 +98,33 @@ defmodule Passport.TwoFactorAuth do
     |> put_change(:tfa_recovery_tokens, generate_tfa_recovery_tokens(token_count))
   end
 
+  @doc """
+  Clears all tfa recovery tokens
+  """
+  @spec destroy_tfa_recovery_tokens(Ecto.Changeset.t) :: Ecto.Changeset.t
+  def destroy_tfa_recovery_tokens(changeset) do
+    changeset
+    |> put_change(:tfa_recovery_tokens, [])
+  end
+
   @spec changeset(Ecto.Changeset.t | entity, map, :update) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
-
+  def changeset(entity, _params, :disable) do
+    changeset
+    |> put_change(:tfa_enabled, false)
+    |> put_change(:tfa_otp_secret_key, nil)
+    |> put_change(:unconfirmed_tfa_otp_secret_key, nil)
+    |> destroy_tfa_recovery_tokens()
+    |> validate_required([:tfa_otp_secret_key])
+  end
+  def changeset(entity, _params, :confirm) do
+    changeset
+    |> put_change(:tfa_enabled, true)
+    |> put_change(:tfa_otp_secret_key, get_field(changeset, :unconfirmed_tfa_otp_secret_key))
+    |> put_change(:unconfirmed_tfa_otp_secret_key, nil)
+    |> prepare_tfa_recovery_tokens()
+    |> validate_required([:tfa_otp_secret_key])
+  end
   def changeset(entity, params, :update) do
     entity
     |> cast(params, [:tfa_enabled])
@@ -106,11 +135,9 @@ defmodule Passport.TwoFactorAuth do
   @doc """
   Confirm that TFA should be enabled for the provided entity.
   """
-  @spec confirm_tfa(Ecto.Changeset.t) :: Ecto.Changeset.t
-  def confirm_tfa(changeset) do
-    changeset
-    |> put_change(:tfa_enabled, true)
-    |> prepare_tfa_recovery_tokens()
+  @spec confirm_tfa(Ecto.Changeset.t | entity) :: Ecto.Changeset.t
+  def confirm_tfa(entity) do
+    changeset(entity, %{}, :confirm)
   end
 
   @doc """
@@ -120,7 +147,6 @@ defmodule Passport.TwoFactorAuth do
   def abs_check_totp(_record, nil) do
     {:error, {:missing, :otp}}
   end
-
   def abs_check_totp(record, totp) do
     case record.tfa_otp_secret_key do
       nil -> {:error, {:missing, :tfa_otp_secret_key}}
@@ -132,7 +158,6 @@ defmodule Passport.TwoFactorAuth do
   def check_totp(%{tfa_enabled: true} = record, totp) do
     abs_check_totp(record, totp)
   end
-
   def check_totp(_record, _totp) do
     {:error, :tfa_disabled}
   end
@@ -159,6 +184,7 @@ defmodule Passport.TwoFactorAuth do
     |> update(inc: [tfa_attempts_count: 1])
   end
 
+  @spec clear_tfa_attempts(Ecto.Changeset.t | entity) :: Ecto.Changeset.t
   def clear_tfa_attempts(changeset) do
     changeset
     |> put_change(:tfa_attempts_count, 0)
