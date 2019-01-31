@@ -18,6 +18,7 @@ defmodule Passport.Support.DataCase do
 
   using do
     quote do
+      require Passport.Repo
       alias Passport.Support.Repo
 
       import Ecto

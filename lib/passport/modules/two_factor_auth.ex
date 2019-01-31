@@ -134,7 +134,6 @@ defmodule Passport.TwoFactorAuth do
       unconfirmed_tfa_otp_secret_key: nil,
     })
     |> destroy_tfa_recovery_tokens()
-    |> validate_required([:tfa_otp_secret_key])
   end
   def changeset(entity, _params, :confirm) do
     changeset = change(entity)
