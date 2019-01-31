@@ -146,5 +146,22 @@ defmodule Passport.TwoFactorAuthControllerTest do
         "tfa_recovery_tokens" => user.tfa_recovery_tokens,
       } == doc
     end
+
+    test "fails with a 428 if no unconfirmed token is set", %{conn: conn} do
+      user = insert(:user, tfa_otp_secret_key: nil, unconfirmed_tfa_otp_secret_key: nil, tfa_enabled: false)
+
+      conn = post conn, "/account/confirm/tfa", %{
+        "email" => user.email,
+        "password" => user.password
+      }
+
+      assert json_response(conn, 428)
+
+      user = Passport.Repo.replica().get(user.__struct__, user.id)
+
+      refute user.tfa_enabled
+      refute user.tfa_otp_secret_key
+      refute user.unconfirmed_tfa_otp_secret_key
+    end
   end
 end

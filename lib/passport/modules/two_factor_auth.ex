@@ -17,8 +17,12 @@ defmodule Passport.TwoFactorAuth do
   defmacro routes(opts \\ []) do
     two_factor_auth_controller = Keyword.get(opts, :two_factor_auth_controller, TwoFactorAuthController)
     quote do
+      # create a new unconfirmed token for confirmation
       post "/reset/tfa", unquote(two_factor_auth_controller), :create
+      # confirm an unconfirmed token and use it as the primary otp key
       post "/confirm/tfa", unquote(two_factor_auth_controller), :confirm
+      # cancel an unconfirmed token
+      post "/cancel/tfa", unquote(two_factor_auth_controller), :delete
     end
   end
 

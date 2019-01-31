@@ -20,7 +20,7 @@ defmodule Passport.SessionControllerTest do
 
     test "creates a new session with tfa enabled, using otp", %{conn: base_conn} do
       user = insert(:user)
-      {:ok, user} = Passport.confirm_tfa(user)
+      {:ok, user} = Passport.initialize_tfa(user)
       conn = post base_conn, "/account/login", %{
         "email" => user.email,
         "password" => user.password
@@ -39,7 +39,7 @@ defmodule Passport.SessionControllerTest do
 
     test "creates a new session with tfa enabled, using recovery_token", %{conn: base_conn} do
       user = insert(:user)
-      {:ok, user} = Passport.confirm_tfa(user)
+      {:ok, user} = Passport.initialize_tfa(user)
       conn = post base_conn, "/account/login", %{
         "email" => user.email,
         "password" => user.password
@@ -63,7 +63,7 @@ defmodule Passport.SessionControllerTest do
 
     test "fails to create new session with tfa enabled, using incorrect recovery_token", %{conn: base_conn} do
       user = insert(:user)
-      {:ok, user} = Passport.confirm_tfa(user)
+      {:ok, user} = Passport.initialize_tfa(user)
       old_tokens = user.tfa_recovery_tokens
       conn = post base_conn, "/account/login", %{
         "email" => user.email,

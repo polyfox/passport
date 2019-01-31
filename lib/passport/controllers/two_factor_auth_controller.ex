@@ -62,6 +62,9 @@ defmodule Passport.TwoFactorAuthController do
           {:ok, false} ->
             send_unauthorized(conn, reason: "incorrect otp code")
 
+          {:error, {:missing, :otp}} ->
+            send_precondition_required(conn, reason: "no otp confirmation in progress")
+
           {:error, _} = err ->
             handle_session_error(controller, conn, err)
         end
