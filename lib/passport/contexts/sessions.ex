@@ -127,20 +127,23 @@ defmodule Passport.Sessions do
 
   @spec check_auth_code(entity, {:otp, String.t} | {:recovery_token, String.t}) :: {:ok, entity} | {:error, term}
   def check_auth_code(entity, auth_code) do
-    if entity.tfa_otp_secret_key do
-      case auth_code do
-        {:otp, otp} ->
-          case TwoFactorAuth.check_totp(entity, otp) do
-            {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
-            {:ok, true} -> {:ok, entity}
-          end
-        {:recovery_token, token} ->
-          TwoFactorAuth.consume_recovery_token(entity, token)
-        _ ->
-          {:error, {:missing_auth_code, entity}}
-      end
-    else
-      {:error, {:missing_tfa_otp_secret_key, entity}}
+    cond do
+      is_nil(entity.tfa_otp_secret_key) ->
+        {:error, {:missing_tfa_otp_secret_key, entity}}
+      is_nil(auth_code) ->
+        {:error, {:missing_auth_code, entity}}
+      true ->
+        case auth_code do
+          {:otp, otp} ->
+            case TwoFactorAuth.check_totp(entity, otp) do
+              {:ok, false} -> {:error, {:unauthorized_tfa, entity}}
+              {:ok, true} -> {:ok, entity}
+            end
+          {:recovery_token, token} ->
+            TwoFactorAuth.consume_recovery_token(entity, token)
+          _ ->
+            {:error, {:invalid_auth_code, entity}}
+        end
     end
   end
 
@@ -175,13 +178,19 @@ defmodule Passport.Sessions do
     |> basic_authenticate_entity(params)
     |> case do
       {:ok, entity} ->
-        if Config.features?(entity, :two_factor_auth) && entity.tfa_enabled do
-          case extract_auth_code(params) do
-            {:otp, code} -> check_auth_code(entity, code)
-            _ -> {:error, {:missing_auth_code, entity}}
-          end
-        else
-          {:ok, entity}
+        cond do
+          not Config.features?(entity, :two_factor_auth) -> {:ok, entity}
+          not entity.tfa_enabled -> {:ok, entity}
+          not is_nil(entity.tfa_otp_secret_key) ->
+            case extract_auth_code(params) do
+              {:otp, code} -> check_auth_code(entity, code)
+              {:recovery_token, code} ->
+                {:error, {:recovery_token_obtained, entity}}
+              _ ->
+                {:error, {:invalid_auth_code, entity}}
+            end
+          true ->
+            {:error, {:missing_tfa_otp_secret_key, entity}}
         end
       {:error, _} = err -> err
     end

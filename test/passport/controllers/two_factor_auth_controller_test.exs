@@ -2,10 +2,27 @@ defmodule Passport.TwoFactorAuthControllerTest do
   use Passport.Support.Web.ConnCase
 
   describe "POST /account/reset/tfa" do
+    test "can reset if tfa_otp_secret_key is nil and tfa enabled", %{conn: conn} do
+      user = insert(:user, tfa_enabled: true, tfa_otp_secret_key: nil)
+      refute(user.tfa_otp_secret_key)
+
+      conn = post conn, "/account/reset/tfa", %{
+        "email" => user.email,
+        "password" => user.password
+      }
+
+      doc = json_response(conn, 201)
+
+      user = Passport.Repo.replica().get(Passport.Support.User, user.id)
+
+      refute user.tfa_otp_secret_key
+      assert user.unconfirmed_tfa_otp_secret_key
+    end
+
     test "can reset tfa_otp_secret_key without tfa enabled", %{conn: conn} do
       user = insert(:user)
-      old_tfa_otp_secret_key = user.tfa_otp_secret_key
-      assert old_tfa_otp_secret_key
+      refute user.tfa_enabled
+      old_tfa_otp_secret_key = assert(user.tfa_otp_secret_key)
       conn = post conn, "/account/reset/tfa", %{
         "email" => user.email,
         "password" => user.password
@@ -119,18 +136,48 @@ defmodule Passport.TwoFactorAuthControllerTest do
   end
 
   describe "POST /account/confirm/tfa" do
+    test "can confirm tfa if tfa_enabled and tfa_otp_secret_key is nil and unconfirmed_tfa_otp_secret_key is valid", %{conn: conn} do
+      user = insert(:user, tfa_enabled: true, tfa_otp_secret_key: nil)
+      {:ok, user} = Passport.prepare_tfa_confirmation(user)
+      refute user.tfa_otp_secret_key
+      assert user.unconfirmed_tfa_otp_secret_key
+
+      # otp isn't needed since the tfa_otp_secret_key is nil
+      conn = post conn, "/account/confirm/tfa", %{
+        "email" => user.email,
+        "password" => user.password,
+        "otp" => :pot.totp(user.unconfirmed_tfa_otp_secret_key),
+      }
+
+      doc = json_response(conn, 200)
+
+      user = Passport.Repo.replica().get(user.__struct__, user.id)
+
+      assert user.tfa_enabled
+      assert user.tfa_otp_secret_key
+      assert user.tfa_recovery_tokens
+      refute user.unconfirmed_tfa_otp_secret_key
+
+      assert %{
+        "id" => user.id,
+        "email" => user.email,
+        "username" => user.username,
+        "tfa_recovery_tokens" => user.tfa_recovery_tokens,
+      } == doc
+    end
+
     test "confirm tfa is valid", %{conn: conn} do
       user = insert(:user, tfa_otp_secret_key: nil)
       {:ok, user} = Passport.prepare_tfa_confirmation(user)
       refute user.tfa_otp_secret_key
       assert user.unconfirmed_tfa_otp_secret_key
+
       conn = post conn, "/account/confirm/tfa", %{
         "email" => user.email,
         "password" => user.password,
         "otp" => :pot.totp(user.unconfirmed_tfa_otp_secret_key)
       }
       doc = json_response(conn, 200)
-
 
       user = Passport.Repo.replica().get(user.__struct__, user.id)
 

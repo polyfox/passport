@@ -47,27 +47,34 @@ defmodule Passport.TwoFactorAuthController do
     end
   end
 
+  def do_confirm(controller, conn, entity, params) do
+    case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"], :unconfirmed_tfa_otp_secret_key) do
+      {:ok, true} ->
+        case Passport.confirm_tfa(entity) do
+          {:ok, entity} ->
+            render(conn, "confirm.json", data: entity)
+          {:error, %Ecto.Changeset{} = changeset} ->
+            send_changeset_error(conn, changeset: changeset)
+        end
+
+      {:ok, false} ->
+        send_unauthorized(conn, reason: "incorrect otp code")
+
+      {:error, {:missing, :otp}} ->
+        send_precondition_required(conn, reason: "no otp confirmation in progress")
+
+      {:error, _} = err ->
+        handle_session_error(controller, conn, err)
+    end
+  end
+
+  @spec confirm(module, Plug.Conn.t, map) :: Plug.Conn.t
   def confirm(controller, conn, params) do
     case Passport.Sessions.authenticate_entity_tfa(params["email"], params) do
       {:ok, entity} ->
-        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"], :unconfirmed_tfa_otp_secret_key) do
-          {:ok, true} ->
-            case Passport.confirm_tfa(entity) do
-              {:ok, entity} ->
-                render(conn, "confirm.json", data: entity)
-              {:error, %Ecto.Changeset{} = changeset} ->
-                send_changeset_error(conn, changeset: changeset)
-            end
-
-          {:ok, false} ->
-            send_unauthorized(conn, reason: "incorrect otp code")
-
-          {:error, {:missing, :otp}} ->
-            send_precondition_required(conn, reason: "no otp confirmation in progress")
-
-          {:error, _} = err ->
-            handle_session_error(controller, conn, err)
-        end
+        do_confirm(controller, conn, entity, params)
+      {:error, {:missing_tfa_otp_secret_key, entity}} = err ->
+        do_confirm(controller, conn, entity, params)
       {:error, _} = err ->
         handle_session_error(controller, conn, err)
     end
