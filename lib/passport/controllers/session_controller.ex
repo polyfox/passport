@@ -68,6 +68,9 @@ defmodule Passport.SessionController do
       {:error, {:missing, attr}} ->
         send_parameter_missing(conn, fields: [attr])
 
+      {:error, {:invalid_parameter, attr}} ->
+        send_parameter_invalid(conn, fields: [attr])
+
       {:error, {:recovery_token_not_found, entity}} ->
         {:ok, _entity} = Passport.track_tfa_attempts(entity, conn.remote_ip)
         send_unauthorized(conn, reason: "Invalid Recovery Token.")
@@ -119,19 +122,11 @@ defmodule Passport.SessionController do
     end
   end
 
-  defp try_create_session(controller, conn, entity) do
+  defp try_create_session(controller, conn, entity, params) do
     if controller.require_tfa_setup?(conn, entity) do
       {:error, {:force_tfa_setup, entity}}
     else
-      Passport.Sessions.create_session(entity)
-    end
-  end
-
-  def determine_auth_code(params) do
-    cond do
-      params["otp"] -> {:otp, params["otp"]}
-      params["recovery_token"] -> {:recovery_token, params["recovery_token"]}
-      true -> nil
+      Passport.Sessions.create_session(entity, params)
     end
   end
 
@@ -139,9 +134,9 @@ defmodule Passport.SessionController do
   def commit_entity_changes(entity), do: {:ok, entity}
 
   def create(controller, conn, params) do
-    with {:ok, entity} <- Passport.authenticate_entity(params["email"], params["password"], determine_auth_code(params)),
+    with {:ok, entity} <- Passport.authenticate_entity(params["email"], params),
          {:ok, entity} <- commit_entity_changes(entity),
-         {:ok, {token, entity}} <- try_create_session(controller, conn, entity),
+         {:ok, {token, entity}} <- try_create_session(controller, conn, entity, params),
          {:ok, entity} <- Passport.on_successful_sign_in(entity, conn.remote_ip) do
       conn
       |> put_status(201)

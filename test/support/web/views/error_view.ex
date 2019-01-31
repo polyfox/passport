@@ -28,6 +28,21 @@ defmodule Passport.Support.Web.ErrorView do
     }
   end
 
+  def render("parameter_invalid.json", assigns) do
+    %{
+      errors: Enum.map(assigns[:fields], fn field ->
+        %{
+          status: "422",
+          code: "parameter_invalid",
+          title: "Parameter Invalid",
+          source: %{
+            parameter: "/#{field}"
+          }
+        }
+      end)
+    }
+  end
+
   def render("locked.json", assigns) do
     %{errors: [%{status: "423", code: "locked", title: "Locked", detail: assigns[:reason]}]}
   end

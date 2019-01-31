@@ -7,7 +7,7 @@ defmodule Passport.Support.User do
   Passport.schema()
 
   schema "users" do
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
 
     field :email, :string
     field :username, :string

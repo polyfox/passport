@@ -7,12 +7,12 @@ defmodule Passport.Support.Sessions do
   end
 
   @impl true
-  def check_authentication(entity, password) do
-    Passport.check_authenticatable(entity, password)
+  def check_authentication(entity, params) do
+    Passport.check_authenticatable(entity, extract_password(params))
   end
 
   @impl true
-  def create_session(entity) do
+  def create_session(entity, _params) do
     # for simplicity sake use the entity's id as the token
     {:ok, {entity.id, entity}}
   end

@@ -10,7 +10,7 @@ by adding `passport` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:passport, "~> 0.1.0"}
+    {:passport, "~> 0.3.0"}
   ]
 end
 ```
@@ -21,7 +21,7 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 ## Modules
 
-* Activatable `:activatable`
+* Activatable `activatable`
 * Authenticatable `authenticatable`
 * Confirmable `confirmable`
 * Lockable `lockable`
@@ -43,6 +43,7 @@ be found at [https://hexdocs.pm/passport](https://hexdocs.pm/passport).
 
 | Name       | Type | Description |
 | ---------- | ---- | ----------- |
+| `old_password` | `string` | `virtual` |
 | `password` | `string` |  `virtual` |
 | `password_confirmation` | `string` | `virtual` |
 | `password_changed` | `boolean` | `virtual` Was the password changed in the latest update? |
@@ -257,6 +258,7 @@ The module must be configered via `config :passport, sessions_client: ModuleName
 
 ```elixir
 defmodule Passport.Support.Sessions do
+  # imports extract_password/1 and extract_auth_code/1
   use Passport.Sessions
 
   @impl true
@@ -265,12 +267,12 @@ defmodule Passport.Support.Sessions do
   end
 
   @impl true
-  def check_authentication(entity, password) do
-    Passport.check_authenticatable(entity, password)
+  def check_authentication(entity, params) do
+    Passport.check_authenticatable(entity, extract_password(params))
   end
 
   @impl true
-  def create_session(entity) do
+  def create_session(entity, _params) do
     # for simplicity sake use the entity's id as the token
     {:ok, {entity.id, entity}}
   end

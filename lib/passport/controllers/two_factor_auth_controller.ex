@@ -24,7 +24,7 @@ defmodule Passport.TwoFactorAuthController do
   import Plug.Conn
   import Phoenix.Controller
   import Passport.APIHelper
-  import Passport.SessionController, only: [determine_auth_code: 1, handle_session_error: 3]
+  import Passport.SessionController, only: [handle_session_error: 3]
 
   defp do_create(conn, entity) do
     case Passport.prepare_tfa_confirmation(entity) do
@@ -39,7 +39,7 @@ defmodule Passport.TwoFactorAuthController do
   end
 
   def create(controller, conn, params) do
-    case Passport.Sessions.authenticate_entity(params["email"], params["password"], determine_auth_code(params)) do
+    case Passport.Sessions.authenticate_entity(params["email"], params) do
       {:ok, entity} -> do_create(conn, entity)
       {:error, {:missing_tfa_otp_secret_key, entity}} -> do_create(conn, entity)
       {:error, _} = err ->
@@ -48,9 +48,9 @@ defmodule Passport.TwoFactorAuthController do
   end
 
   def confirm(controller, conn, params) do
-    case Passport.Sessions.authenticate_entity(params["email"], params["password"], {:otp, params["otp"]}) do
+    case Passport.Sessions.authenticate_entity_tfa(params["email"], params) do
       {:ok, entity} ->
-        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
+        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"], :unconfirmed_tfa_otp_secret_key) do
           {:ok, true} ->
             case Passport.confirm_tfa(entity) do
               {:ok, entity} ->
@@ -61,6 +61,9 @@ defmodule Passport.TwoFactorAuthController do
 
           {:ok, false} ->
             send_unauthorized(conn, reason: "incorrect otp code")
+
+          {:error, {:missing, :otp}} ->
+            send_precondition_required(conn, reason: "no otp confirmation in progress")
 
           {:error, _} = err ->
             handle_session_error(controller, conn, err)

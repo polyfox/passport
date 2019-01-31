@@ -6,10 +6,11 @@ defmodule Passport.Recoverable do
   # for now
   @type t :: term
 
-  defmacro schema_fields(_opts \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
-      field :reset_password_token, :string
-      field :reset_password_sent_at, :utc_datetime
+      field :reset_password_token,   :string
+      field :reset_password_sent_at, unquote(timestamp_type)
     end
   end
 
@@ -30,8 +31,8 @@ defmodule Passport.Recoverable do
   def migration_fields(_mod) do
     [
       "# Recoverable",
-      "add :reset_password_token, :string",
-      "add :reset_password_sent_at, :utc_datetime",
+      "add :reset_password_token,   :string",
+      "add :reset_password_sent_at, :utc_datetime_usec",
     ]
   end
 
@@ -42,22 +43,32 @@ defmodule Passport.Recoverable do
     ]
   end
 
-  def generate_reset_password_token do
-    Keygen.random_string(128)
+  @spec generate_reset_password_token(term) :: String.t
+  def generate_reset_password_token(object \\ nil) do
+    Keygen.random_string(Passport.Config.reset_password_token_length(object))
   end
 
+  @spec clear_reset_password(Ecto.Changeset.t | map) :: Ecto.Changeset.t
   def clear_reset_password(changeset) do
     changeset
-    |> change()
-    |> put_change(:reset_password_token, nil)
-    |> put_change(:reset_password_sent_at, nil)
+    |> change(%{
+      reset_password_token: nil,
+      reset_password_sent_at: nil,
+    })
   end
 
-  def prepare_reset_password(changeset) do
+  @spec prepare_reset_password(Ecto.Changeset.t | map, map) :: Ecto.Changeset.t
+  def prepare_reset_password(changeset, params \\ %{}) do
+    reset_password_token = params[:reset_password_token] ||
+      generate_reset_password_token(changeset)
+    reset_password_sent_at = params[:reset_password_sent_at] ||
+      Passport.Util.generate_timestamp_for(changeset, :reset_password_sent_at)
+
     changeset
-    |> change()
-    |> put_change(:reset_password_token, generate_reset_password_token())
-    |> put_change(:reset_password_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> change(%{
+      reset_password_token: reset_password_token,
+      reset_password_sent_at: reset_password_sent_at,
+    })
   end
 
   def by_reset_password_token(query, token) do

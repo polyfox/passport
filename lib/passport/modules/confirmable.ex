@@ -2,11 +2,12 @@ defmodule Passport.Confirmable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields(_options \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
-      field :confirmation_token, :string
-      field :confirmed_at, :utc_datetime
-      field :confirmation_sent_at, :utc_datetime
+      field :confirmation_token,   :string
+      field :confirmed_at,         unquote(timestamp_type)
+      field :confirmation_sent_at, unquote(timestamp_type)
     end
   end
 
@@ -24,9 +25,9 @@ defmodule Passport.Confirmable do
   def migration_fields(_mod) do
     [
       "# Confirmable",
-      "add :confirmation_token, :string",
-      "add :confirmed_at, :utc_datetime",
-      "add :confirmation_sent_at, :utc_datetime",
+      "add :confirmation_token,   :string",
+      "add :confirmed_at,         :utc_datetime_usec",
+      "add :confirmation_sent_at, :utc_datetime_usec",
     ]
   end
 
@@ -39,26 +40,30 @@ defmodule Passport.Confirmable do
 
   alias Passport.Keygen
 
-  def generate_confirmation_token do
-    Keygen.random_string(128)
+  @spec generate_confirmation_token(term) :: String.t
+  def generate_confirmation_token(object \\ nil) do
+    Keygen.random_string(Passport.Config.confirmation_token_length(object))
   end
 
-  def confirm(changeset) do
+  def confirm(changeset, params \\ %{}) do
+    confirmed_at =  params[:confirmed_at] || Passport.Util.generate_timestamp_for(changeset, :confirmed_at)
     changeset
     |> put_change(:confirmation_token, nil)
     |> put_change(:confirmation_sent_at, nil)
-    |> put_change(:confirmed_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:confirmed_at, confirmed_at)
   end
 
-  def new_confirmation(changeset) do
+  def new_confirmation(changeset, params \\ %{}) do
+    confirmation_token = params[:confirmation_token] || generate_confirmation_token(changeset)
+    confirmation_sent_at = params[:confirmation_sent_at] || Passport.Util.generate_timestamp_for(changeset, :confirmation_sent_at)
     changeset
-    |> put_change(:confirmation_token, generate_confirmation_token())
-    |> put_change(:confirmation_sent_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:confirmation_token, confirmation_token)
+    |> put_change(:confirmation_sent_at, confirmation_sent_at)
   end
 
-  def prepare_confirmation(changeset) do
+  def prepare_confirmation(changeset, params \\ %{}) do
     changeset
-    |> new_confirmation()
+    |> new_confirmation(params)
     |> put_change(:confirmed_at, nil)
   end
 
@@ -70,5 +75,10 @@ defmodule Passport.Confirmable do
 
   def by_confirmation_token(query, token) do
     where(query, confirmation_token: ^token)
+  end
+
+  @spec confirmed?(term) :: boolean
+  def confirmed?(entity) do
+    !!entity.confirmed_at
   end
 end

@@ -52,6 +52,10 @@ defmodule Passport do
         @passport_enabled_features
       end
 
+      @doc """
+      Is the specified passport feature available?
+      """
+      @spec passport_feature?(atom) :: boolean
       def passport_feature?(feature) do
         Enum.member?(passport_enabled_features(), feature)
       end
@@ -90,7 +94,8 @@ defmodule Passport do
     end
   end
 
-  def migration_fields(user_mod) do
+  @spec migration_fields(String.t | atom) :: iolist
+  def migration_fields(user_mod) when is_atom(user_mod) or is_binary(user_mod) do
     @feature_map
     |> Enum.map(fn {_, mod} ->
       mod.migration_fields(user_mod)
@@ -98,7 +103,8 @@ defmodule Passport do
     |> List.flatten()
   end
 
-  def migration_indices(user_mod) do
+  @spec migration_indices(String.t | atom) :: iolist
+  def migration_indices(user_mod) when is_atom(user_mod) or is_binary(user_mod) do
     @feature_map
     |> Enum.map(fn {_, mod} ->
       mod.migration_indices(user_mod)
@@ -122,6 +128,17 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
+  @doc """
+  Generates the tfa_otp_secret_key and clears any temporary states.
+  """
+  @spec initialize_tfa(entity) :: {:ok, entity} | {:error, term}
+  def initialize_tfa(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.initialize_tfa()
+    |> Repo.primary().update()
+  end
+
   @spec confirm_tfa(entity) :: {:ok, entity} | {:error, term}
   def confirm_tfa(entity) do
     entity
@@ -130,25 +147,28 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
+  @spec entity_activated?(term) :: boolean
   def entity_activated?(entity) do
     if Config.features?(entity, :activatable) do
-      entity.active
+      Activatable.activated?(entity)
     else
       true
     end
   end
 
+  @spec entity_confirmed?(term) :: boolean
   def entity_confirmed?(entity) do
     if Config.features?(entity, :confirmable) do
-      !!entity.confirmed_at
+      Confirmable.confirmed?(entity)
     else
       true
     end
   end
 
+  @spec entity_locked?(term) :: boolean
   def entity_locked?(entity) do
     if Config.features?(entity, :lockable) do
-      !!entity.locked_at
+      Lockable.locked?(entity)
     else
       false
     end
@@ -221,11 +241,11 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec prepare_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
-  def prepare_confirmation(entity) do
+  @spec prepare_confirmation(entity, map) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
+  def prepare_confirmation(entity, params \\ %{}) do
     entity
     |> change()
-    |> Confirmable.prepare_confirmation()
+    |> Confirmable.prepare_confirmation(params)
     |> Repo.primary().update()
   end
 
@@ -237,11 +257,11 @@ defmodule Passport do
     |> Repo.primary().update()
   end
 
-  @spec confirm_email(Ecto.Changeset.t | entity) :: {:ok, term} | {:error, term}
-  def confirm_email(entity) do
+  @spec confirm_email(Ecto.Changeset.t | entity, map) :: {:ok, term} | {:error, term}
+  def confirm_email(entity, params \\ %{}) do
     entity
     |> change()
-    |> Confirmable.confirm()
+    |> Confirmable.confirm(params)
     |> Repo.primary().update()
   end
 
@@ -251,8 +271,17 @@ defmodule Passport do
   * `params` - the parameters
   * `kind` - the kind of changes to apply
   """
-  @spec changeset(entity :: entity, params :: map, :password_update | :password_reset | :password_change | :update | :authenticatable) :: Ecto.Changeset.t
+  @spec changeset(entity :: entity, params :: map, :activation | :password_update | :password_reset | :password_change | :update) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
+
+  def changeset(entity, params, :activation) do
+    changeset = entity
+    if Config.features?(entity, :activatable) do
+      Activatable.changeset(changeset, params)
+    else
+      changeset
+    end
+  end
 
   def changeset(entity, params, :password_reset) do
     changeset = if Config.features?(entity, :authenticatable) do
@@ -312,7 +341,7 @@ defmodule Passport do
     changeset = changeset(entity, params, :password_reset)
     # https://github.com/polyfox/passport/issues/11
     if Config.features?(entity, :confirmable) do
-      Confirmable.confirm(changeset)
+      Confirmable.confirm(changeset, params)
     else
       changeset
     end
@@ -434,5 +463,5 @@ defmodule Passport do
     end
   end
 
-  defdelegate authenticate_entity(identity, password, code \\ nil), to: Passport.Sessions
+  defdelegate authenticate_entity(identity, params), to: Passport.Sessions
 end

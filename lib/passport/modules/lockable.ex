@@ -2,11 +2,12 @@ defmodule Passport.Lockable do
   import Ecto.Changeset
   import Ecto.Query
 
-  defmacro schema_fields(_options \\ []) do
+  defmacro schema_fields(options \\ []) do
+    timestamp_type = Keyword.get(options, :timestamp_type, :utc_datetime_usec)
     quote do
       field :failed_attempts, :integer, default: 0
-      field :locked_at, :utc_datetime_usec
-      field :lock_changed, :boolean, virtual: true, default: false
+      field :locked_at,       unquote(timestamp_type)
+      field :lock_changed,    :boolean, virtual: true, default: false
     end
   end
 
@@ -19,7 +20,7 @@ defmodule Passport.Lockable do
     [
       "# Lockable",
       "add :failed_attempts, :integer, default: 0",
-      "add :locked_at, :utc_datetime",
+      "add :locked_at,       :utc_datetime_usec",
     ]
   end
 
@@ -34,7 +35,7 @@ defmodule Passport.Lockable do
   @spec try_lock(Ecto.Query.t | module, non_neg_integer, atom) :: {boolean, Ecto.Query.t}
   def try_lock(query, failed_attenmpts, _reason) do
     if failed_attenmpts > 2 do
-      now = DateTime.utc_now()
+      now = Passport.Util.generate_timestamp_for(query, :locked_at)
       {true, update(query, [u], set: [locked_at: ^now])}
     else
       {false, query}
@@ -52,5 +53,10 @@ defmodule Passport.Lockable do
   def unlock_changeset(changeset) do
     changeset
     |> put_change(:locked_at, nil)
+  end
+
+  @spec locked?(term) :: boolean
+  def locked?(entity) do
+    !!entity.locked_at
   end
 end
