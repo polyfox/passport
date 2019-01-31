@@ -50,7 +50,7 @@ defmodule Passport.TwoFactorAuthController do
   def confirm(controller, conn, params) do
     case Passport.Sessions.authenticate_entity_tfa(params["email"], params) do
       {:ok, entity} ->
-        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"]) do
+        case Passport.TwoFactorAuth.abs_check_totp(entity, params["otp"], :unconfirmed_tfa_otp_secret_key) do
           {:ok, true} ->
             case Passport.confirm_tfa(entity) do
               {:ok, entity} ->

@@ -128,6 +128,17 @@ defmodule Passport do
     |> Repo.replica().one()
   end
 
+  @doc """
+  Generates the tfa_otp_secret_key and clears any temporary states.
+  """
+  @spec initialize_tfa(entity) :: {:ok, entity} | {:error, term}
+  def initialize_tfa(entity) do
+    entity
+    |> change()
+    |> TwoFactorAuth.initialize_tfa()
+    |> Repo.primary().update()
+  end
+
   @spec confirm_tfa(entity) :: {:ok, entity} | {:error, term}
   def confirm_tfa(entity) do
     entity

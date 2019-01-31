@@ -61,7 +61,8 @@ defmodule Passport.TwoFactorAuth do
     generate_tfa_recovery_tokens(count - 1, [generate_tfa_recovery_token() | acc])
   end
 
-  defp patch_otp_secret_key(changeset, key \\ :tfa_otp_secret_key) do
+  @spec patch_otp_secret_key(Ecto.Changeset.t | entity, atom) :: Ecto.Changeset.t
+  defp patch_otp_secret_key(changeset, key) do
     case get_field(changeset, key) do
       nil ->
         secret = generate_secret_key()
@@ -109,15 +110,30 @@ defmodule Passport.TwoFactorAuth do
 
   @spec changeset(Ecto.Changeset.t | entity, map, :update) :: Ecto.Changeset.t
   def changeset(entity, params, kind \\ :update)
+  def changeset(entity, _params, :initialize) do
+    entity
+    |> change(%{
+      tfa_enabled: true,
+      tfa_otp_secret_key: nil,
+      unconfirmed_tfa_otp_secret_key: nil,
+    })
+    |> destroy_tfa_recovery_tokens()
+    |> patch_otp_secret_key(:tfa_otp_secret_key)
+    |> prepare_tfa_recovery_tokens()
+    |> validate_required([:tfa_enabled, :tfa_otp_secret_key])
+  end
   def changeset(entity, _params, :disable) do
-    changeset
-    |> put_change(:tfa_enabled, false)
-    |> put_change(:tfa_otp_secret_key, nil)
-    |> put_change(:unconfirmed_tfa_otp_secret_key, nil)
+    entity
+    |> change(%{
+      tfa_enabled: false,
+      tfa_otp_secret_key: nil,
+      unconfirmed_tfa_otp_secret_key: nil,
+    })
     |> destroy_tfa_recovery_tokens()
     |> validate_required([:tfa_otp_secret_key])
   end
   def changeset(entity, _params, :confirm) do
+    changeset = change(entity)
     changeset
     |> put_change(:tfa_enabled, true)
     |> put_change(:tfa_otp_secret_key, get_field(changeset, :unconfirmed_tfa_otp_secret_key))
@@ -133,6 +149,16 @@ defmodule Passport.TwoFactorAuth do
   end
 
   @doc """
+  Forcefully initialize the tfa_otp_secret_key and reset any temporary states.
+
+  **Note** this also resets the recovery tokens.
+  """
+  @spec initialize_tfa(entity) :: Ecto.Changeset.t
+  def initialize_tfa(entity) do
+    changeset(entity, %{}, :initialize)
+  end
+
+  @doc """
   Confirm that TFA should be enabled for the provided entity.
   """
   @spec confirm_tfa(Ecto.Changeset.t | entity) :: Ecto.Changeset.t
@@ -141,24 +167,27 @@ defmodule Passport.TwoFactorAuth do
   end
 
   @doc """
-  Check the totp regardless of if tfa_enabled state
+  Validates given One Time Passcode against the entity.
+
+  Specific otp secrete keys can be specified with the third parameter
   """
-  @spec abs_check_totp(entity, String.t) :: {:ok, boolean} | {:error, term}
-  def abs_check_totp(_record, nil) do
+  @spec abs_check_totp(entity, String.t, :tfa_otp_secret_key | :unconfirmed_tfa_otp_secret_key) :: {:ok, boolean} | {:error, term}
+  def abs_check_totp(_entity, totp, key \\ :tfa_otp_secret_key)
+  def abs_check_totp(_entity, nil, _) do
     {:error, {:missing, :otp}}
   end
-  def abs_check_totp(record, totp) do
-    case record.tfa_otp_secret_key do
-      nil -> {:error, {:missing, :tfa_otp_secret_key}}
+  def abs_check_totp(entity, totp, key) do
+    case Map.get(entity, key) do
+      nil -> {:error, {:missing, key}}
       secret -> {:ok, :pot.valid_totp(totp, secret, window: 1, addWindow: 1)}
     end
   end
 
   @spec check_totp(entity, String.t | nil) :: {:ok, boolean} | {:error, term}
-  def check_totp(%{tfa_enabled: true} = record, totp) do
-    abs_check_totp(record, totp)
+  def check_totp(%{tfa_enabled: true} = entity, totp) do
+    abs_check_totp(entity, totp, :tfa_otp_secret_key)
   end
-  def check_totp(_record, _totp) do
+  def check_totp(_entity, _totp) do
     {:error, :tfa_disabled}
   end
 
