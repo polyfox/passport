@@ -49,8 +49,7 @@ defmodule Passport.Mixfile do
       {:plug, "~> 1.7"},
       {:postgrex, ">= 0.0.0", only: [:test]},
       #
-      {:bcrypt_elixir, "~> 1.0"},
-      {:comeonin, "~> 4.0"},
+      {:bcrypt_elixir, "~> 1.0 or ~> 2.0"},
       {:pot, "~> 0.9"},
       {:ecto, "~> 3.0", override: true},
       {:ecto_sql, "~> 3.0"},

@@ -73,7 +73,7 @@ defmodule Passport.TwoFactorAuthController do
     case Passport.Sessions.authenticate_entity_tfa(params["email"], params) do
       {:ok, entity} ->
         do_confirm(controller, conn, entity, params)
-      {:error, {:missing_tfa_otp_secret_key, entity}} = err ->
+      {:error, {:missing_tfa_otp_secret_key, entity}} ->
         do_confirm(controller, conn, entity, params)
       {:error, _} = err ->
         handle_session_error(controller, conn, err)

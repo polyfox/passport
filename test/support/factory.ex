@@ -3,7 +3,7 @@ require Passport.Repo
 defmodule Passport.Support.Factory do
   use ExMachina.Ecto, repo: Passport.Repo.primary()
 
-  @user_password_hash Comeonin.Bcrypt.hashpwsalt("password")
+  @user_password_hash Bcrypt.hash_pwd_salt("password")
 
   def user_factory do
     %Passport.Support.User{

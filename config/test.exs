@@ -1,5 +1,8 @@
 use Mix.Config
 
+config :bcrypt_elixir,
+  log_rounds: 4
+
 config :passport,
   error_view: Passport.Support.Web.ErrorView,
   sessions_client: Passport.Support.Sessions

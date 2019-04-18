@@ -2,8 +2,8 @@ alias Passport.Config
 require Config
 
 defmodule Passport.Authenticatable do
-  import Comeonin.Bcrypt,
-    only: [checkpw: 2, dummy_checkpw: 0, hashpwsalt: 1]
+  import Bcrypt,
+    only: [verify_pass: 2, no_user_verify: 0, hash_pwd_salt: 1]
 
   import Ecto.Changeset
 
@@ -53,7 +53,7 @@ defmodule Passport.Authenticatable do
     if password do
       changeset
       |> put_change(:password_changed, true)
-      |> put_change(Config.password_hash_field(changeset), hashpwsalt(password))
+      |> put_change(Config.password_hash_field(changeset), hash_pwd_salt(password))
     else
       changeset
     end
@@ -73,7 +73,7 @@ defmodule Passport.Authenticatable do
       old_password ->
         password_hash_field = Config.password_hash_field(changeset)
         password_hash = get_field(changeset, password_hash_field)
-        if checkpw(old_password, password_hash) do
+        if verify_pass(old_password, password_hash) do
           changeset
           |> hash_password!()
           |> validate_required([password_hash_field])
@@ -121,22 +121,22 @@ defmodule Passport.Authenticatable do
     {:ok, entity} |
     {:error, :password_missing | :unauthorized | {:unauthorized, entity}}
   def check_password(_entity, nil) do
-    dummy_checkpw()
+    no_user_verify()
     {:error, :password_missing}
   end
 
   def check_password(nil, _password) do
-    dummy_checkpw()
+    no_user_verify()
     {:error, :unauthorized}
   end
 
   def check_password(entity, password) when is_binary(password) do
     case Map.fetch!(entity, Config.password_hash_field(entity)) do
       nil ->
-        dummy_checkpw()
+        no_user_verify()
         {:error, {:unauthorized, entity}}
       hashed_password ->
-        if checkpw(password, hashed_password) do
+        if verify_pass(password, hashed_password) do
           {:ok, entity}
         else
           {:error, {:unauthorized, entity}}

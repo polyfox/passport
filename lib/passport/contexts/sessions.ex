@@ -184,7 +184,7 @@ defmodule Passport.Sessions do
           not is_nil(entity.tfa_otp_secret_key) ->
             case extract_auth_code(params) do
               {:otp, code} -> check_auth_code(entity, code)
-              {:recovery_token, code} ->
+              {:recovery_token, _code} ->
                 {:error, {:recovery_token_obtained, entity}}
               _ ->
                 {:error, {:invalid_auth_code, entity}}
