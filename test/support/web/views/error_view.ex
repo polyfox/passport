@@ -55,7 +55,7 @@ defmodule Passport.Support.Web.ErrorView do
     "Page not found"
   end
 
-  def render("500.html", _assigns) do
+  def render("500.html", assigns) do
     "Internal server error"
   end
 

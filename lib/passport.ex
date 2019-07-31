@@ -176,61 +176,72 @@ defmodule Passport do
 
   @spec track_failed_attempts(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def track_failed_attempts(entity, remote_ip) do
-    Repo.primary().transaction(fn ->
-      entity_id = entity.id
+    if Config.features?(entity, :lockable) do
+      Repo.primary().transaction(fn ->
+        entity_id = entity.id
 
-      scope =
-        entity.__struct__
-        |> where(id: ^entity_id)
+        scope =
+          entity.__struct__
+          |> where(id: ^entity_id)
 
-      {1, [failed_attempts]} =
-        scope
-        |> select([e], e.failed_attempts)
-        |> Lockable.track_failed_attempts(remote_ip)
-        |> Repo.primary().update_all([])
+        {1, [failed_attempts]} =
+          scope
+          |> select([e], e.failed_attempts)
+          |> Lockable.track_failed_attempts(remote_ip)
+          |> Repo.primary().update_all([])
 
-      {1, [entity2]} =
-        scope
-        |> select([e], e)
-        |> Lockable.try_lock(failed_attempts, :authenticate)
-        |> case do
-          {true, query} ->
-            Repo.primary().update_all(query, [])
-          {false, _} ->
-            {1, [Repo.primary().one(scope)]}
-        end
-      entity2
-    end)
+        {1, [entity]} =
+          scope
+          |> select([e], e)
+          |> Lockable.try_lock(failed_attempts, :authenticate)
+          |> case do
+            {true, query} ->
+              Repo.primary().update_all(query, [])
+
+            {false, _} ->
+              {1, [Repo.primary().one(scope)]}
+          end
+
+        entity
+      end)
+    else
+      {:ok, entity}
+    end
   end
 
   @spec track_tfa_attempts(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def track_tfa_attempts(entity, remote_ip) do
-    Repo.primary().transaction(fn ->
-      entity_id = entity.id
+    if Config.features?(entity, :two_factor_auth) do
+      Repo.primary().transaction(fn ->
+        entity_id = entity.id
 
-      scope =
-        entity.__struct__
-        |> where(id: ^entity_id)
+        scope =
+          entity.__struct__
+          |> where(id: ^entity_id)
 
-      {1, [tfa_attempts_count]} =
-        scope
-        |> select([e], e.tfa_attempts_count)
-        |> TwoFactorAuth.track_tfa_attempts(remote_ip)
-        |> Repo.primary().update_all([])
+        {1, [tfa_attempts_count]} =
+          scope
+          |> select([e], e.tfa_attempts_count)
+          |> TwoFactorAuth.track_tfa_attempts(remote_ip)
+          |> Repo.primary().update_all([])
 
-      {1, [entity2]} =
-        scope
-        |> select([e], e)
-        |> Lockable.try_lock(tfa_attempts_count, :tfa)
-        |> case do
-          {true, query} ->
-            Repo.primary().update_all(query, [])
-          {false, _} ->
-            {1, [Repo.primary().one(scope)]}
-        end
+        {1, [entity]} =
+          scope
+          |> select([e], e)
+          |> Lockable.try_lock(tfa_attempts_count, :tfa)
+          |> case do
+            {true, query} ->
+              Repo.primary().update_all(query, [])
 
-      entity2
-    end)
+            {false, _} ->
+              {1, [Repo.primary().one(scope)]}
+          end
+
+        entity
+      end)
+    else
+      {:ok, entity}
+    end
   end
 
   @spec prepare_tfa_confirmation(entity) :: {:ok, term} | {:error, Ecto.Changeset.t | term}
@@ -410,24 +421,30 @@ defmodule Passport do
   @spec on_successful_sign_in(entity, remote_ip :: term) :: {:ok, entity} | {:error, term}
   def on_successful_sign_in(entity, remote_ip) do
     changeset = change(entity)
-    changeset = if Config.features?(entity, :trackable) do
-      # log sign in
-      Trackable.track_sign_in(changeset, remote_ip)
-    else
-      changeset
-    end
-    changeset = if Config.features?(entity, :lockable) do
-      # clear failed_attempts
-      Lockable.clear_failed_attempts(changeset)
-    else
-      changeset
-    end
-    changeset = if Config.features?(entity, :two_factor_auth) do
-      # clear tfa attempts
-      TwoFactorAuth.clear_tfa_attempts(changeset)
-    else
-      changeset
-    end
+    changeset =
+      if Config.features?(entity, :trackable) do
+        # log sign in
+        Trackable.track_sign_in(changeset, remote_ip)
+      else
+        changeset
+      end
+
+    changeset =
+      if Config.features?(entity, :lockable) do
+        # clear failed_attempts
+        Lockable.clear_failed_attempts(changeset)
+      else
+        changeset
+      end
+
+    changeset =
+      if Config.features?(entity, :two_factor_auth) do
+        # clear tfa attempts
+        TwoFactorAuth.clear_tfa_attempts(changeset)
+      else
+        changeset
+      end
+
     Repo.primary().update(changeset)
   end
 
