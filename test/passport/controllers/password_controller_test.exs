@@ -9,7 +9,7 @@ defmodule Passport.PasswordControllerTest do
         "email" => user.email
       }
 
-      assert json_response(conn, 204)
+      assert text_response(conn, 204)
 
       user = reload_user(user)
       assert user.reset_password_token
@@ -26,7 +26,7 @@ defmodule Passport.PasswordControllerTest do
         "password_confirmation" => "new_password"
       }
 
-      assert json_response(conn, 204)
+      assert text_response(conn, 204)
 
       user = reload_user(user)
       refute user.reset_password_token
@@ -46,7 +46,7 @@ defmodule Passport.PasswordControllerTest do
         "password_confirmation" => "new_password"
       }
 
-      assert json_response(conn, 204)
+      assert text_response(conn, 204)
 
       user = reload_user(user)
       refute user.reset_password_token
@@ -63,7 +63,7 @@ defmodule Passport.PasswordControllerTest do
       assert user.reset_password_token
 
       conn = delete conn, "/account/password/#{user.reset_password_token}"
-      assert json_response(conn, 204)
+      assert text_response(conn, 204)
 
       user = reload_user(user)
       refute user.reset_password_token
