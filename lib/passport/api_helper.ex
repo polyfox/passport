@@ -13,8 +13,13 @@ defmodule Passport.APIHelper do
 
   # 204
   def send_no_content(conn, assigns \\ []) do
-    # Not really an error
-    send_error(conn, 204, "no_content.json", assigns)
+    # we'l switch to "text/plain" response here
+    # since "application/json" cannot have
+    # an empty response with content-length: 0
+    #
+    # cowboy throws an error if you try to
+    # return a 204 with content-length != 0
+    conn |> put_status(:no_content) |> text("")
   end
 
   # 401
